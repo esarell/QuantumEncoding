@@ -14,6 +14,7 @@ def prob(qubit):
     #prob qubtit(0,0)
     #|\bra{state}\ket{a}|^2
     #Do we have a valule a or is just probabilty of p000
+
     return qubit
 
 
@@ -25,7 +26,7 @@ def cos2_theta(m,j,n):
     The angel theta 
     '''
     #two sums which are then divided over each other
-    i = j*2**(n-m)
+    i = j*2**(n-m-1)
     #I think this is where i need to minus 1 from the equation
     #Think about it for the sum though?
     half = (j+0.5)*2**(n-m-1)
@@ -34,12 +35,15 @@ def cos2_theta(m,j,n):
     top =0
     bottom =0
     for x in range(i,int(half)):
-        
+        #print(x)
         top = top + prob(x)
     
     for y in range(i,full):
         bottom = bottom + prob(y)
-        
+    
+    #print(top)
+    #print(bottom)
+    
     result = top/bottom
 
     #Now get the angle from the cos^2(theta)
@@ -54,25 +58,27 @@ def Grover_Rudolph_func(n,prob):
 
     #Define how many levels we want to have
     m = list(range(0, n-1))
+    #m=[0,1]
     #Initalise the quantum circuit
     qc = qt.QuantumCircuit(n)
     angles={}
     #Loop through each level of m
     for i in m:
         #split up the probability distribution into two parts
-        print("m"+str(i))
+        #print("m",i)
         #This is our j in the maths
         #Define the number of bins j (how many bins we split the probability distribution into)
         current_bins = list(range(0,2**i))
         #print(current_bins)
         for j in current_bins:
+            #print("j",j)
             theta=cos2_theta(i,j,n)
             place=str(i)+str(j)
             angles[place]=theta
     print(angles)
     #Draws the quantum circuit
-    qc.draw("mpl")
-    plt.show()
+    #qc.draw("mpl")
+    #plt.show()
 
 if __name__ == "__main__":
     Grover_Rudolph_func(3,3)
