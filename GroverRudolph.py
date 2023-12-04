@@ -41,6 +41,7 @@ def cos2_theta(m,j,n):
         bottom = bottom + prob(y)
         
     result = top/bottom
+
     #Now get the angle from the cos^2(theta)
 
     return result
