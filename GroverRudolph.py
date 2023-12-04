@@ -3,7 +3,7 @@ It should take a probabiltiy distribution and encoded it into a quantum state of
 import qiskit as qt
 import matplotlib.pyplot as plt
 import numpy as np
-
+#test
 def prob(qubit):
     '''
     Args:
