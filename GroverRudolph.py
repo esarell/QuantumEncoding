@@ -3,7 +3,7 @@ It should take a probabiltiy distribution and encoded it into a quantum state of
 import qiskit as qt
 import matplotlib.pyplot as plt
 import numpy as np
-#test
+
 def prob(qubit):
     '''
     Args:
@@ -14,7 +14,7 @@ def prob(qubit):
     #prob qubtit(0,0)
     #|\bra{state}\ket{a}|^2
     #Do we have a valule a or is just probabilty of p000
-
+    #This is where we need the probability distribution
     return qubit
 
 
