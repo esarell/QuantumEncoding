@@ -71,8 +71,8 @@ def Grover_Rudolph_func(n,prob):
             angles[place]=theta
     print(angles)
     #Draws the quantum circuit
-    #qc.draw("mpl")
-    #plt.show()
+    qc.draw("mpl")
+    plt.show()
 
 if __name__ == "__main__":
     Grover_Rudolph_func(3,3)
