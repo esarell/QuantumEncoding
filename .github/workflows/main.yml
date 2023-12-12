@@ -16,3 +16,10 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+      - name: Running Grover-Rudolph Algorithm
+        run: | 
+          python -m GroverRudolph.py
+      - name: Testing
+        run: | 
+          cd test
+          python -m TestGR.py
