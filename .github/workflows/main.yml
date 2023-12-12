@@ -18,7 +18,7 @@ jobs:
           pip install -r requirements.txt
       - name: Running Grover-Rudolph Algorithm
         run: | 
-          python -m GroverRudolph.py
+          python -m GroverRudolph
       - name: Testing
         run: | 
           cd test
