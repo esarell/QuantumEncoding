@@ -22,4 +22,4 @@ jobs:
       - name: Testing
         run: | 
           cd test
-          python -m TestGR.py
+          python -m TestGR
