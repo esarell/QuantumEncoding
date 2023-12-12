@@ -16,13 +16,9 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-  test:
-    runs-on: ubuntu-latest
-    steps:
       - name: Running Grover-Rudolph Algorithm
         run: | 
           python -m GroverRudolph
       - name: Testing
-        run: | 
-          cd test
+        run: |
           python -m TestGR
