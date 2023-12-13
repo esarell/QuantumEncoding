@@ -20,24 +20,6 @@ def prob(qubit,distribution):
     print(qubit)
     #This is where we need the probability distribution
     return qubit
-def f1(x):
-    return x
-
-#Might remove
-def normalisation(distribution):
-    '''Args:
-    fmin:
-    fmax:
-    distribution:
-    x: current fucntion
-    Returns:
-
-    intergrate |psi(x)|^2
-    '''
-    intergrate_distribution = scipy.integrate.simps(abs(f1) ** 2, distribution)
-    print("normal",intergrate_distribution)
-    normal =  np.sqrt(intergrate_distribution)
-    return normal
 
 def cos2_theta(m,j,n,distribution):
     '''Args:
