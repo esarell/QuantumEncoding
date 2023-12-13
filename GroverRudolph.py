@@ -3,25 +3,48 @@ It should take a probabiltiy distribution and encoded it into a quantum state of
 import qiskit as qt
 import matplotlib.pyplot as plt
 import numpy as np
+import scipy
 
-def prob(qubit):
+def prob(qubit,distribution):
     '''
     Args:
-    takes in the place? Qubit?
+    qubit: takes in the Qubit (we will use this in a decimal form)
+    distribution: takes in the probability distribution we are trying to encode
     Return:
-    The probabibility of the qubit
+    probabilty from that point in the qubit :p(i) in the 
     '''
-    #prob qubtit(0,0)
-    #|\bra{state}\ket{a}|^2
-    #Do we have a valule a or is just probabilty of p000
+    '''f=fmin + i delta f
+    so p(i) = (fmin+i delta f)^(=7/3) / Nc
+    Where Nc is the normalisation constant
+    delta f = (fmin-fmax)/2^n '''
+    print(qubit)
     #This is where we need the probability distribution
     return qubit
+def f1(x):
+    return x
 
+#Might remove
+def normalisation(distribution):
+    '''Args:
+    fmin:
+    fmax:
+    distribution:
+    x: current fucntion
+    Returns:
 
-def cos2_theta(m,j,n):
+    intergrate |psi(x)|^2
+    '''
+    intergrate_distribution = scipy.integrate.simps(abs(f1) ** 2, distribution)
+    print("normal",intergrate_distribution)
+    normal =  np.sqrt(intergrate_distribution)
+    return normal
+
+def cos2_theta(m,j,n,distribution):
     '''Args:
     m: the level we are at
     j: which bin we are in
+    n:
+    distribution:
     Return:
     The angel theta 
     '''
@@ -32,6 +55,14 @@ def cos2_theta(m,j,n):
     half = (j+0.5)*2**(n-m-1)
     full =  (j+1)*2**(n-m-1)
     #print(i)
+    #Calculate the constants from the classical distribiution for prob
+    fmin = distribution[0]
+    size = len(distribution)
+    fmax = distribution[(size-1)]
+    normal = np.sqrt(np.sum(np.abs(distribution)**2))
+    print("normal:",normal)
+    fdelta = (fmin-fmax)/normal
+    print("fdelta",fdelta)
     top =0
     bottom =0
     for x in range(i,int(half)):
@@ -50,10 +81,10 @@ def cos2_theta(m,j,n):
 
     return result
 
-def Grover_Rudolph_func(n,prob):
+def Grover_Rudolph_func(n,distribution):
     '''Args: 
     n: the number of qubits for our circuit
-    prob: is the probability distrbution we are trying to encode
+    distribution: is the probability distrbution we are trying to encode
     Returns: an encoded quantum circuit '''
 
     #Define how many levels we want to have
@@ -72,7 +103,7 @@ def Grover_Rudolph_func(n,prob):
         #print(current_bins)
         for j in current_bins:
             #print("j",j)
-            theta=cos2_theta(i,j,n)
+            theta=cos2_theta(i,j,n,distribution)
             place=str(i)+str(j)
             angles[place]=theta
     print(angles)
