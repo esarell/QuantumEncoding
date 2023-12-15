@@ -3,7 +3,8 @@ This file is just going to be used as a very simple was of generating different
 probability distributions to test the GroverRudolph algorithm
 There will be a straight line,
 exponentail,
-gaussian
+gaussian.
+Hayes tested on f^(-7/3) with fmin=40Hz, fmax=168Hz, fdelta = 2Hz, requiring 6 qubits Tdelta =0.02s
 '''
 def straightLine(n):
     '''Args:

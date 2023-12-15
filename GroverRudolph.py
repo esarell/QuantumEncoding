@@ -5,11 +5,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 import scipy
 
-def prob(qubit,distribution):
+def prob(qubit,fmin,fdelta,distrbution_type):
     '''
     Args:
     qubit: takes in the Qubit (we will use this in a decimal form)
-    distribution: takes in the probability distribution we are trying to encode
+    fmin: minimum frequency we are using
+    fdelta: the change in frequence per each step
+    distribution_type: the number of the power to be applied to this
+    Note in Hayes paper there distribution_type is 7/3
     Return:
     probabilty from that point in the qubit :p(i) in the 
     '''
@@ -17,9 +20,11 @@ def prob(qubit,distribution):
     so p(i) = (fmin+i delta f)^(=7/3) / Nc
     Where Nc is the normalisation constant
     delta f = (fmin-fmax)/2^n '''
-    print(qubit)
+    #print(qubit)
+    probabilityI = (fmin + (qubit*fdelta))**distrbution_type
     #This is where we need the probability distribution
-    return qubit
+    print("prob",probabilityI)
+    return probabilityI
 
 def cos2_theta(m,j,n,distribution):
     '''Args:
@@ -28,7 +33,7 @@ def cos2_theta(m,j,n,distribution):
     n:
     distribution:
     Return:
-    The angel theta 
+    The angle theta 
     '''
     #two sums which are then divided over each other
     i = j*2**(n-m-1)
@@ -41,18 +46,22 @@ def cos2_theta(m,j,n,distribution):
     fmin = distribution[0]
     size = len(distribution)
     fmax = distribution[(size-1)]
+    #normalise our distribution
     normal = np.sqrt(np.sum(np.abs(distribution)**2))
     print("normal:",normal)
-    fdelta = (fmin-fmax)/normal
+    fdelta = (fmax-fmin)/(2**n)
     print("fdelta",fdelta)
     top =0
     bottom =0
+    #CHANGE FOR THE DIFFERENT KINDS OF PROBABILITY
+    #THIS CURRENTLY DOES NOTHING
+    distrbution_type =1
     for x in range(i,int(half)):
         #print(x)
-        top = top + prob(x)
+        top = top + prob(x,fmin,fdelta,distrbution_type)
     
     for y in range(i,full):
-        bottom = bottom + prob(y)
+        bottom = bottom + prob(y,fmin,fdelta,distrbution_type)
     
     #print(top)
     #print(bottom)
@@ -94,4 +103,4 @@ def Grover_Rudolph_func(n,distribution):
     #plt.show()
 
 if __name__ == "__main__":
-    Grover_Rudolph_func(3,3)
+    Grover_Rudolph_func(3,[0,1,2,3,4,5,6,7])
