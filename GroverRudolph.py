@@ -4,10 +4,12 @@ import qiskit as qt
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy
+import qiskit_tools as qtool
+from qiskit.circuit.library.standard_gates import RYGate
 
 def prob(qubit,fmin,fdelta,distrbution_type):
     '''
-    Args:
+    Args:xs
     qubit: takes in the Qubit (we will use this in a decimal form)
     fmin: minimum frequency we are using
     fdelta: the change in frequence per each step
@@ -33,7 +35,7 @@ def cos2_theta(m,j,n,distribution):
     n:
     distribution:
     Return:
-    The angle theta 
+    cos^2 theat(m,j)
     '''
     #two sums which are then divided over each other
     i = j*2**(n-m-1)
@@ -69,8 +71,41 @@ def cos2_theta(m,j,n,distribution):
     result = top/bottom
 
     #Now get the angle from the cos^2(theta)
-
+    result = np.arccos(np.sqrt(result))
     return result
+def Q_operator(m,j,theta,circ,qr,n):
+    '''
+    Args:
+    m = level
+    j = bin
+    theta= outcome from the cos2_theta fucntion
+    circ= current quantum circuit
+    Return:
+    circ = Updated quantum circuit with the changed ancillary register
+    '''
+    #First convert from decimal to binary using qiskit tools
+    test = qtool.my_binary_repr(theta,6,nint=1 )
+    if m == 0:
+        #level 1 only requires one rotational gate
+        circ.ry(2*theta,qr[0:n-1])
+    return test
+
+def setAncillary(theta,qubit,circ,anc):
+    """
+    theta:
+    qubit: the number we are currently on in the loop this can be used for our control bit?
+    circ:
+    anc:
+    return
+
+    """
+
+    thetaBinary = qtool.my_binary_repr(theta,6,nint=1 )
+    #print('anc',len(anc))
+    for i in range(len(anc)):
+        if thetaBinary[i] =='1':
+            circ.x(anc[i])
+
 
 def Grover_Rudolph_func(n,distribution):
     '''Args: 
@@ -82,9 +117,14 @@ def Grover_Rudolph_func(n,distribution):
     m = list(range(0, n-1))
     #m=[0,1]
     #Initalise the quantum circuit
-    qc = qt.QuantumCircuit(n)
+    # our probability distribution will be put on n qubits
+    qr = qt.QuantumRegister(n,'q')
+    # We then will add 6 bits for the ancillary register 
+    anc = qt.QuantumRegister(6,'ancilla')
+    qc = qt.QuantumCircuit(qr,anc)
     angles={}
     #Loop through each level of m
+
     for i in m:
         #split up the probability distribution into two parts
         #print("m",i)
@@ -95,12 +135,36 @@ def Grover_Rudolph_func(n,distribution):
         for j in current_bins:
             #print("j",j)
             theta=cos2_theta(i,j,n,distribution)
+            #binaryTheta= Q_operator(i,j,theta,qc,qr,n)
+            if i == 0:
+                qc.ry(2*theta,qr[n-1])
+                #setAncillary(theta,qc,anc)
+            elif i ==1:
+                qc.x(n-1)
+                gate = RYGate(2*theta).control(1)
+                qc.append(gate,[n-1,n-2])
+            elif i ==2:
+                qc.x(n-1)
+                if j%2 ==0:
+                    qc.x(n-2)
+                gate = RYGate(2*theta).control(2)
+                qc.append(gate,[n-1,n-2,n-3])
+            elif i ==3:
+                qc.x(n-1)
+                if j%2 ==0:
+                    qc.x(n-2)
+                if j%3 ==0:
+                    qc.x(n-3)
+                gate = RYGate(2*theta).control(3)
+                qc.append(gate,[n-1,n-2,n-3,n-4])
             place=str(i)+str(j)
-            angles[place]=theta
+            angles[place]= theta
     print(angles)
     #Draws the quantum circuit
-    #qc.draw("mpl")
-    #plt.show()
+    qc.draw("mpl")
+    plt.show()
 
 if __name__ == "__main__":
-    Grover_Rudolph_func(3,[0,1,2,3,4,5,6,7])
+    #test = qtool.my_binary_repr(1.25,6,nint=1 )
+    #print(test)
+    Grover_Rudolph_func(5,[0,1,2,3,4,5,6,7])
