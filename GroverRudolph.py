@@ -106,19 +106,17 @@ def setAncillary(theta,qubit,circ,anc):
         if thetaBinary[i] =='1':
             circ.x(anc[i])
 
-
 def Grover_Rudolph_func(n,distribution):
     '''Args: 
     n: the number of qubits for our circuit
     distribution: is the probability distrbution we are trying to encode
     Returns: an encoded quantum circuit '''
-
     #Define how many levels we want to have
     m = list(range(0, n-1))
     #m=[0,1]
     #Initalise the quantum circuit
     # our probability distribution will be put on n qubits
-    qr = qt.QuantumRegister(n,'q')
+    qr= qt.QuantumRegister(n,'q')
     # We then will add 6 bits for the ancillary register 
     anc = qt.QuantumRegister(6,'ancilla')
     qc = qt.QuantumCircuit(qr,anc)
@@ -150,12 +148,17 @@ def Grover_Rudolph_func(n,distribution):
                 gate = RYGate(2*theta).control(2)
                 qc.append(gate,[n-1,n-2,n-3])
             elif i ==3:
-                qc.x(n-1)
-                if j%2 ==0:
-                    qc.x(n-2)
-                if j%3 ==0:
-                    qc.x(n-3)
-                gate = RYGate(2*theta).control(3)
+                if j%(i+1) ==0:
+                    print(i)
+                    print("ALL")
+                    qc.x(qr[n-3:n])
+                    #qc.x(n-2)
+                elif j%((i+1)/2) ==0:
+                    qc.x(qr[n-2:n])
+                    print("Half")
+                else:
+                    qc.x(n-1)
+                gate = RYGate(2*theta).control(i)
                 qc.append(gate,[n-1,n-2,n-3,n-4])
             place=str(i)+str(j)
             angles[place]= theta
