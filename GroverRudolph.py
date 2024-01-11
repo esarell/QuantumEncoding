@@ -121,29 +121,46 @@ def LinearPiecewise(qc):
     the function f(x) in the output register
     """
     #Label function
-def xGateAdd(m,pattern,qc,qr,theta,n):
+def xGateAdd(m,pattern,qc,qr,theta_array,n):
+    '''Adds the X gates and the Rcy Gates for small values of m
+        This is a recursive function
+    Args:
+    m the max level for the Grover Rudolph Algorithm
+    pattern: a blank list which will be populated with the pattern of the X gates
+    qc: quantum circuit
+    qr: quantum register this is being added to
+    theta_array: a 2 dimensional array containing the values for the Rcy gate
+    n: the number of qubits for the qr register
+    Returns:
+    patterns: A list of the X-gate pattern
+     '''
     if m == 0:
+        theta = theta_array[0][0]
         qc.ry(2*theta,qr[n-1])
         return []
     else:
         x = m -1
-        pattern = xGateAdd(x,pattern,qc,qr,theta,n)
+        pattern = xGateAdd(x,pattern,qc,qr,theta_array,n)
         temparray = pattern.copy()
         pattern.append(m)
         if m ==1:
             qc.x(n-1)
+            theta=theta_array[m][0]
             gate = RYGate(2*theta).control(m)
             qc.append(gate,[n-1,n-2])
             qc.x(n-1)
+            theta=theta_array[m][1]
             gate = RYGate(2*theta).control(m)
             qc.append(gate,[n-1,n-2])
             return(pattern)
         else:
             pattern.extend(temparray)
             qc.x(qr[n-m:n])
+            theta = theta=theta_array[m][0]
             gate = RYGate(2*theta).control(m)
             qc.append(gate,[*qr[n-m-1:][::-1]])
-            for i in pattern:
+            for counter,i in enumerate(pattern):
+                theta=theta_array[m][counter+1]
                 qc.x(qr[n-i:n])
                 gate = RYGate(2*theta).control(m)
                 qc.append(gate,[*qr[n-m-1:][::-1]])
@@ -164,11 +181,9 @@ def Grover_Rudolph_func(n,distribution):
     anc = qt.QuantumRegister(6,'ancilla')
     qc = qt.QuantumCircuit(qr,anc)
     angles={}
+    theta_array =[]
     #Loop through each level of m
-    x_gate_pattern =[]
-    print("PATTERN")
-    print(xGateAdd(len(m)-1,x_gate_pattern,qc,qr,0.5,n))
-    
+    x_gate_pattern =[]    
     for i in m:
         #split up the probability distribution into two parts
         #print("m",i)
@@ -176,53 +191,19 @@ def Grover_Rudolph_func(n,distribution):
         #Define the number of bins j (how many bins we split the probability distribution into)
         current_bins = list(range(0,2**i))
         #print(current_bins)
+        temp =[]
         for j in current_bins:
             #print("j",j)
             #Calculates the angle based on the probability of that bin m,j
             theta=cos2_theta(i,j,n,distribution)
-            #Hard coded if statement this should be replaced with a general method
-            '''if i == 0:
+            temp.append(theta)
 
-                qc.ry(2*theta,qr[n-1])
-                #setAncillary(theta,qc,anc)
-            elif i ==1:
-                qc.x(n-1)
-                gate = RYGate(2*theta).control(1)
-                qc.append(gate,[n-1,n-2])
-            elif i ==2:
-                qc.x(n-1)
-                if j%2 ==0:
-                    qc.x(n-2)
-                gate = RYGate(2*theta).control(2)
-                qc.append(gate,[n-1,n-2,n-3])
-            elif i ==3:
-                if j%(i+1) ==0:
-                    #print(i)
-                    #print("ALL")
-                    qc.x(qr[n-3:n])
-                    #qc.x(n-2)
-                elif j%((i+1)/2) ==0:
-                    qc.x(qr[n-2:n])
-                    #print("Half")
-                else:
-                    qc.x(n-1)
-                gate = RYGate(2*theta).control(i)
-                qc.append(gate,[n-1,n-2,n-3,n-4])
-            elif i ==4:
-                if j%2 ==0:
-                    if j== pow(2,i)/2 or j ==0:
-                        qc.x(qr[n-i:n])
-                    elif j%(pow(2,i)/4) ==0:
-                        qc.x(qr[n-(i-1):n])
-                    else:
-                        qc.x(qr[n-(i-2):n])
-                else:
-                    qc.x(n-1)
-                gate = RYGate(2*theta).control(i)
-                qc.append(gate,[n-1,n-2,n-3,n-4,n-5])'''
-            place=str(i)+str(j)
-            angles[place]= theta
-    print(angles)
+            #place=str(i)+str(j)
+            #angles[place]= theta
+        theta_array.append(temp)
+    print(theta_array)
+    print("PATTERN")
+    print(xGateAdd(len(m)-1,x_gate_pattern,qc,qr,theta_array,n))
     #Draws the quantum circuit
     qc.draw("mpl")
     plt.show()
