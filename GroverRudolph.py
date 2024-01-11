@@ -25,7 +25,7 @@ def prob(qubit,fmin,fdelta,distrbution_type):
     #print(qubit)
     probabilityI = (fmin + (qubit*fdelta))**distrbution_type
     #This is where we need the probability distribution
-    print("prob",probabilityI)
+    #print("prob",probabilityI)
     return probabilityI
 
 def cos2_theta(m,j,n,distribution):
@@ -50,9 +50,9 @@ def cos2_theta(m,j,n,distribution):
     fmax = distribution[(size-1)]
     #normalise our distribution
     normal = np.sqrt(np.sum(np.abs(distribution)**2))
-    print("normal:",normal)
+    #print("normal:",normal)
     fdelta = (fmax-fmin)/(2**n)
-    print("fdelta",fdelta)
+    #print("fdelta",fdelta)
     top =0
     bottom =0
     #CHANGE FOR THE DIFFERENT KINDS OF PROBABILITY
@@ -107,6 +107,7 @@ def setAncillary(theta,qubit,circ,anc):
             circ.x(anc[i])
 def LinearPiecewise(qc):
     """
+    Function 
     Args:
     qc: the overall circit
         *Note qc will be made of 4 registers that are used and 1 register that isn't used by this function
@@ -119,7 +120,34 @@ def LinearPiecewise(qc):
     Returns:
     the function f(x) in the output register
     """
-    #Please note that we need 4 registes for this process
+    #Label function
+def xGateAdd(m,pattern,qc,qr,theta,n):
+    if m == 0:
+        qc.ry(2*theta,qr[n-1])
+        return []
+    else:
+        x = m -1
+        pattern = xGateAdd(x,pattern,qc,qr,theta,n)
+        temparray = pattern.copy()
+        pattern.append(m)
+        if m ==1:
+            qc.x(n-1)
+            gate = RYGate(2*theta).control(m)
+            qc.append(gate,[n-1,n-2])
+            qc.x(n-1)
+            gate = RYGate(2*theta).control(m)
+            qc.append(gate,[n-1,n-2])
+            return(pattern)
+        else:
+            pattern.extend(temparray)
+            qc.x(qr[n-m:n])
+            gate = RYGate(2*theta).control(m)
+            qc.append(gate,[*qr[n-m-1:][::-1]])
+            for i in pattern:
+                qc.x(qr[n-i:n])
+                gate = RYGate(2*theta).control(m)
+                qc.append(gate,[*qr[n-m-1:][::-1]])
+        return(pattern)    
 
 def Grover_Rudolph_func(n,distribution):
     '''Args: 
@@ -137,7 +165,10 @@ def Grover_Rudolph_func(n,distribution):
     qc = qt.QuantumCircuit(qr,anc)
     angles={}
     #Loop through each level of m
-
+    x_gate_pattern =[]
+    print("PATTERN")
+    print(xGateAdd(len(m)-1,x_gate_pattern,qc,qr,0.5,n))
+    
     for i in m:
         #split up the probability distribution into two parts
         #print("m",i)
@@ -150,7 +181,7 @@ def Grover_Rudolph_func(n,distribution):
             #Calculates the angle based on the probability of that bin m,j
             theta=cos2_theta(i,j,n,distribution)
             #Hard coded if statement this should be replaced with a general method
-            if i == 0:
+            '''if i == 0:
 
                 qc.ry(2*theta,qr[n-1])
                 #setAncillary(theta,qc,anc)
@@ -166,13 +197,13 @@ def Grover_Rudolph_func(n,distribution):
                 qc.append(gate,[n-1,n-2,n-3])
             elif i ==3:
                 if j%(i+1) ==0:
-                    print(i)
-                    print("ALL")
+                    #print(i)
+                    #print("ALL")
                     qc.x(qr[n-3:n])
                     #qc.x(n-2)
                 elif j%((i+1)/2) ==0:
                     qc.x(qr[n-2:n])
-                    print("Half")
+                    #print("Half")
                 else:
                     qc.x(n-1)
                 gate = RYGate(2*theta).control(i)
@@ -188,7 +219,7 @@ def Grover_Rudolph_func(n,distribution):
                 else:
                     qc.x(n-1)
                 gate = RYGate(2*theta).control(i)
-                qc.append(gate,[n-1,n-2,n-3,n-4,n-5])
+                qc.append(gate,[n-1,n-2,n-3,n-4,n-5])'''
             place=str(i)+str(j)
             angles[place]= theta
     print(angles)
