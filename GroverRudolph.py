@@ -105,6 +105,21 @@ def setAncillary(theta,qubit,circ,anc):
     for i in range(len(anc)):
         if thetaBinary[i] =='1':
             circ.x(anc[i])
+def LinearPiecewise(qc):
+    """
+    Args:
+    qc: the overall circit
+        *Note qc will be made of 4 registers that are used and 1 register that isn't used by this function
+        
+        anc:
+        lab:
+        -------------------------------------------
+        qr: This register the main register used by the rest of the grover-rudolph algorithm
+
+    Returns:
+    the function f(x) in the output register
+    """
+    #Please note that we need 4 registes for this process
 
 def Grover_Rudolph_func(n,distribution):
     '''Args: 
@@ -132,9 +147,11 @@ def Grover_Rudolph_func(n,distribution):
         #print(current_bins)
         for j in current_bins:
             #print("j",j)
+            #Calculates the angle based on the probability of that bin m,j
             theta=cos2_theta(i,j,n,distribution)
-            #binaryTheta= Q_operator(i,j,theta,qc,qr,n)
+            #Hard coded if statement this should be replaced with a general method
             if i == 0:
+
                 qc.ry(2*theta,qr[n-1])
                 #setAncillary(theta,qc,anc)
             elif i ==1:
@@ -160,6 +177,18 @@ def Grover_Rudolph_func(n,distribution):
                     qc.x(n-1)
                 gate = RYGate(2*theta).control(i)
                 qc.append(gate,[n-1,n-2,n-3,n-4])
+            elif i ==4:
+                if j%2 ==0:
+                    if j== pow(2,i)/2 or j ==0:
+                        qc.x(qr[n-i:n])
+                    elif j%(pow(2,i)/4) ==0:
+                        qc.x(qr[n-(i-1):n])
+                    else:
+                        qc.x(qr[n-(i-2):n])
+                else:
+                    qc.x(n-1)
+                gate = RYGate(2*theta).control(i)
+                qc.append(gate,[n-1,n-2,n-3,n-4,n-5])
             place=str(i)+str(j)
             angles[place]= theta
     print(angles)
@@ -170,4 +199,4 @@ def Grover_Rudolph_func(n,distribution):
 if __name__ == "__main__":
     #test = qtool.my_binary_repr(1.25,6,nint=1 )
     #print(test)
-    Grover_Rudolph_func(5,[0,1,2,3,4,5,6,7])
+    Grover_Rudolph_func(6,[0,1,2,3,4,5,6,7])
