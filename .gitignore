@@ -1,2 +1,6 @@
 myenv/
 __pycache__/
+phenomenological_BBH_merger_model_fixed.py
+IMRPhenomD_amplitude.pdf
+.venv/
+qiskit_tools.py
