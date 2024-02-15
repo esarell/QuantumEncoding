@@ -4,7 +4,7 @@ import qiskit as qt
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy
-import qiskit_tools as qtool
+import Quantum_Tools as qtool
 from qiskit.circuit.library.standard_gates import RYGate
 
 def prob(qubit,fmin,fdelta,distrbution_type):
@@ -50,26 +50,17 @@ def cos2_theta(m,j,n,distribution):
     fmax = distribution[(size-1)]
     #normalise our distribution
     normal = np.sqrt(np.sum(np.abs(distribution)**2))
-    #print("normal:",normal)
     fdelta = (fmax-fmin)/(2**n)
-    #print("fdelta",fdelta)
     top =0
     bottom =0
     #CHANGE FOR THE DIFFERENT KINDS OF PROBABILITY
     #THIS CURRENTLY DOES NOTHING
     distrbution_type =1
     for x in range(i,int(half)):
-        #print(x)
         top = top + prob(x,fmin,fdelta,distrbution_type)
-    
     for y in range(i,full):
         bottom = bottom + prob(y,fmin,fdelta,distrbution_type)
-    
-    #print(top)
-    #print(bottom)
-    
     result = top/bottom
-
     #Now get the angle from the cos^2(theta)
     result = np.arccos(np.sqrt(result))
     return result
@@ -105,22 +96,104 @@ def setAncillary(theta,qubit,circ,anc):
     for i in range(len(anc)):
         if thetaBinary[i] =='1':
             circ.x(anc[i])
-def LinearPiecewise(qc):
+
+def inputValue(circ,qr,value):
+    """Args:
+    circ: Current circuit
+    qr: The register that we want to put our value in
+    value: the number we want to encode (in binary)
+    Return:
+    Circuit that has the value in the qr 
+    This is just computation bais encoding"""
+    if True:
+        qr = qt.QuantumRegister(6, 'q_reg')
+        circ = qt.QuantumCircuit(qr) 
+    
+    for i,value in enumerate((value[::-1])):
+        print(i)
+        if value == 1:
+            circ.x(qr[i])
+            print("appended at qubit:",i)
+    circ.draw("mpl")
+    plt.show()
+    return circ
+
+
+
+
+def labelGate(circ,qr,anc,lab,target):
+    """
+    Args:
+    circ:
+    qr:
+    anc:
+    lab:
+    target:
+
+    Return:
+    Goal is to put out labels into the lab register
+    """
+
+    #We want to Wrap the stuff we are doing
+    if True:
+        qr = qt.QuantumRegister(6, 'q_reg')
+        target = qt.QuantumRegister(1, 'q_targ')
+        anc = qt.QuantumRegister(6, 'q_ans')
+        lab = qt.QuantumRegister(5, 'q_lab')
+        circ = qt.QuantumCircuit(qr, target, anc, lab) 
+    n=len(qr)
+    #Adding X, QFT to do counting in phase space
+    circ.x(qr[-1])
+    QFT_Gate = qtool.QFT(circ,lab,wrap=True)
+    circ.draw("mpl")
+    plt.show()
+    #circ.QFT(lab)
+    print("HERE")
+    circ.append(QFT_Gate,lab)
+    
+    #We should define bounds, currently pic a constant
+    bound =2**n
+    #Define ncut
+
+    #You can change step size if we want smaller bounds
+    for i,bound in enumerate(range(0,2**n,1)):
+        intcomp_gate = qtool.integer_compare(circ, qr, target, anc, bound, geq=True, wrap=True, uncomp=False, label='P'+str(i))
+        circ.append(intcomp_gate, [*qr, target[0], *anc[:]])
+
+        inc_gate = qtool.increment_gate(circ, lab, wrap=True, label='SET'+str(i), ncut=ncut, QFT_on=False, iQFT_on=False).control(1)
+        circ.append(inc_gate, [target[0], *lab[:]])
+
+        intcomp_gate_inv = qtool.integer_compare(circ, qr, target, anc, bound, geq=True, wrap=True, uncomp=False, inverse=True, label='P'+str(i))
+        circ.append(intcomp_gate_inv, [*qr, target[0], *anc[:]])
+        
+    circ.append(qtool.QFT(circ,lab),lab)    
+    circ.x(qr[-1])
+
+    return circ
+
+def LinearPiecewise(circ,lab):
     """
     Function 
     Args:
-    qc: the overall circit
-        *Note qc will be made of 4 registers that are used and 1 register that isn't used by this function
+    circ: the overall circit
+        *Note circ will be made of 4 registers that are used and 1 register that isn't used by this function
         
         anc:
-        lab:
+        lab: Label Gate
         -------------------------------------------
         qr: This register the main register used by the rest of the grover-rudolph algorithm
 
     Returns:
     the function f(x) in the output register
     """
-    #Label function
+    #Split the function into sections calculate the thing it's doing off that classically
+    #For this would this be my cos^2 theta 
+
+    #Label register: label which section we are in
+    #Coefficent register: Store coeefficent control on label
+    labelGate(circ)
+
+
 def xGateAdd(m,pattern,qc,qr,theta_array,n):
     '''Adds the X gates and the Rcy Gates for small values of m
         This is a recursive function
@@ -180,30 +253,25 @@ def Grover_Rudolph_func(n,distribution):
     # We then will add 6 bits for the ancillary register 
     anc = qt.QuantumRegister(6,'ancilla')
     qc = qt.QuantumCircuit(qr,anc)
-    angles={}
     theta_array =[]
     #Loop through each level of m
     x_gate_pattern =[]    
     for i in m:
+        if i > 4:
+            break
         #split up the probability distribution into two parts
-        #print("m",i)
         #This is our j in the maths
         #Define the number of bins j (how many bins we split the probability distribution into)
         current_bins = list(range(0,2**i))
-        #print(current_bins)
         temp =[]
         for j in current_bins:
-            #print("j",j)
             #Calculates the angle based on the probability of that bin m,j
             theta=cos2_theta(i,j,n,distribution)
             temp.append(theta)
-
             #place=str(i)+str(j)
             #angles[place]= theta
         theta_array.append(temp)
-    print(theta_array)
-    print("PATTERN")
-    print(xGateAdd(len(m)-1,x_gate_pattern,qc,qr,theta_array,n))
+    xGateAdd(len(m)-1,x_gate_pattern,qc,qr,theta_array,n)
     #Draws the quantum circuit
     qc.draw("mpl")
     plt.show()
@@ -211,4 +279,24 @@ def Grover_Rudolph_func(n,distribution):
 if __name__ == "__main__":
     #test = qtool.my_binary_repr(1.25,6,nint=1 )
     #print(test)
-    Grover_Rudolph_func(6,[0,1,2,3,4,5,6,7])
+    #Grover_Rudolph_func(5,[0,1,2,3,4,5,6,7])
+    qr= qt.QuantumRegister(size=6,name='q')
+    # We then will add 6 bits for the ancillary register 
+    anc = qt.QuantumRegister(size=6,name='anc')
+    lab = qt.QuantumRegister(size=4,name='lab')
+    target = qt.QuantumRegister(size=1,name='tar')
+    classical = qt.ClassicalRegister(size=6,name="cla")
+    circ = qt.QuantumCircuit(qr,anc,lab,target,classical)
+    #labelGate(circ,qr,anc,lab,target)
+    result = inputValue(circ,qr,[1,0,0,0,0,0])
+
+    '''circ.append(result,qr)
+    circ.measure(qr,classical)
+    shots = 10
+    backend= qt.Aer.get_backend("aer_simulator")
+    tqc = qt.transpile(circ,backend)
+    job = backend.run(tqc,shots=shots)
+    result = job.result()
+    counts = result.get_counts(tqc)
+    print("counts:",counts) '''
+
