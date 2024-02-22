@@ -106,7 +106,7 @@ def inputValue(circ,qr,value):
     Circuit that has the value in the qr 
     This is just computation bais encoding"""
     if True:
-        qr = qt.QuantumRegister(6, 'q_reg')
+        qr = qt.QuantumRegister(4, 'q_reg')
         circ = qt.QuantumCircuit(qr) 
     
     for i,value in enumerate((value[::-1])):
@@ -114,18 +114,15 @@ def inputValue(circ,qr,value):
         if value == 1:
             circ.x(qr[i])
             print("appended at qubit:",i)
-    circ.draw("mpl")
-    plt.show()
+    #circ.draw("mpl")
+    #plt.show()
     return circ
-
-
-
 
 def labelGate(circ,qr,anc,lab,target):
     """
     Args:
     circ:
-    qr:
+    qr: register containing the value x
     anc:
     lab:
     target:
@@ -134,40 +131,42 @@ def labelGate(circ,qr,anc,lab,target):
     Goal is to put out labels into the lab register
     """
 
-    #We want to Wrap the stuff we are doing
+    #We want to Wrap the stuff we are doing gets werid when we don't
     if True:
-        qr = qt.QuantumRegister(6, 'q_reg')
+        qr = qt.QuantumRegister(4, 'q_reg')
         target = qt.QuantumRegister(1, 'q_targ')
-        anc = qt.QuantumRegister(6, 'q_ans')
-        lab = qt.QuantumRegister(5, 'q_lab')
+        anc = qt.QuantumRegister(4, 'q_ans')
+        lab = qt.QuantumRegister(3, 'q_lab')
         circ = qt.QuantumCircuit(qr, target, anc, lab) 
     n=len(qr)
-    #Adding X, QFT to do counting in phase space
-    circ.x(qr[-1])
+    #Left over from fergus code unsure why this here currently
+    #circ.x(qr[-1])
+    #Adding QFT to do counting in phase space
     QFT_Gate = qtool.QFT(circ,lab,wrap=True)
-    circ.draw("mpl")
-    plt.show()
-    #circ.QFT(lab)
-    print("HERE")
     circ.append(QFT_Gate,lab)
-    
     #We should define bounds, currently pic a constant
-    bound =2**n
+    bound =2**(n-1)
+    print("bound:",bound)
     #Define ncut
 
     #You can change step size if we want smaller bounds
-    for i,bound in enumerate(range(0,2**n,1)):
-        intcomp_gate = qtool.integer_compare(circ, qr, target, anc, bound, geq=True, wrap=True, uncomp=False, label='P'+str(i))
+    for i,bound in enumerate(range(0,bound)):
+        
+        intcomp_gate = qtool.integer_compare(circ, qr, target, anc, bound, wrap=True, uncomp=False, label='P'+str(i))
         circ.append(intcomp_gate, [*qr, target[0], *anc[:]])
 
-        inc_gate = qtool.increment_gate(circ, lab, wrap=True, label='SET'+str(i), ncut=ncut, QFT_on=False, iQFT_on=False).control(1)
+        inc_gate = qtool.increment_gate(circ, lab, wrap=True, label='SET'+str(i), ncut=0, QFT_on=False, iQFT_on=False).control(1)
         circ.append(inc_gate, [target[0], *lab[:]])
 
-        intcomp_gate_inv = qtool.integer_compare(circ, qr, target, anc, bound, geq=True, wrap=True, uncomp=False, inverse=True, label='P'+str(i))
+        intcomp_gate_inv = qtool.integer_compare(circ, qr, target, anc, bound, wrap=True, uncomp=False, inverse=True, label='P'+str(i))
         circ.append(intcomp_gate_inv, [*qr, target[0], *anc[:]])
+
+        print("bound",bound)
+        print("i:",i)
         
-    circ.append(qtool.QFT(circ,lab),lab)    
-    circ.x(qr[-1])
+    QFT_Gate = qtool.QFT(circ,lab,wrap=True)
+    circ.append(QFT_Gate,lab)  
+    #circ.x(qr[-1])
 
     return circ
 
@@ -188,11 +187,21 @@ def LinearPiecewise(circ,lab):
     """
     #Split the function into sections calculate the thing it's doing off that classically
     #For this would this be my cos^2 theta 
-
     #Label register: label which section we are in
     #Coefficent register: Store coeefficent control on label
-    labelGate(circ)
+    if True:
+        qr = qt.QuantumRegister(6, 'q_reg')
+        target = qt.QuantumRegister(1, 'q_targ')
+        anc = qt.QuantumRegister(6, 'q_ans')
+        lab = qt.QuantumRegister(5, 'q_lab')
+        circ = qt.QuantumCircuit(qr, target, anc, lab) 
 
+    input_gate =inputValue(circ,qr,[1,0,0,0,0,0])
+    circ.append(input_gate,qr)
+    label_gate_add =labelGate(circ,qr,anc,lab,target)
+    circ.append(label_gate_add,lab)
+    circ.draw("mpl")
+    plt.show()
 
 def xGateAdd(m,pattern,qc,qr,theta_array,n):
     '''Adds the X gates and the Rcy Gates for small values of m
@@ -280,15 +289,17 @@ if __name__ == "__main__":
     #test = qtool.my_binary_repr(1.25,6,nint=1 )
     #print(test)
     #Grover_Rudolph_func(5,[0,1,2,3,4,5,6,7])
-    qr= qt.QuantumRegister(size=6,name='q')
+    qr= qt.QuantumRegister(size=4,name='q')
     # We then will add 6 bits for the ancillary register 
-    anc = qt.QuantumRegister(size=6,name='anc')
-    lab = qt.QuantumRegister(size=4,name='lab')
+    anc = qt.QuantumRegister(size=4,name='anc')
+    lab = qt.QuantumRegister(size=3,name='lab')
     target = qt.QuantumRegister(size=1,name='tar')
-    classical = qt.ClassicalRegister(size=6,name="cla")
+    classical = qt.ClassicalRegister(size=4,name="cla")
     circ = qt.QuantumCircuit(qr,anc,lab,target,classical)
-    #labelGate(circ,qr,anc,lab,target)
-    result = inputValue(circ,qr,[1,0,0,0,0,0])
+    result = inputValue(circ,qr,[1,0,0,0])
+    circ.append(result,qr)
+    labelGate(circ,qr,anc,lab,target)
+    #result = inputValue(circ,qr,[1,0,0,0,0,0])
 
     '''circ.append(result,qr)
     circ.measure(qr,classical)
