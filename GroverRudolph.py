@@ -7,6 +7,25 @@ import scipy
 import Quantum_Tools as qtool
 from qiskit.circuit.library.standard_gates import RYGate
 
+def quick_measure(circ,q_reg,cla_reg):
+    '''Just a simple function that will do a measurement 10 times and then print the results
+    Args:
+    circ: overal circuit
+    q_reg: the quantum register we are measureing
+    cla_reg: the classical register we are putting the result into
+    Return: 
+    counts: number  '''
+    circ.measure(q_reg,cla_reg)
+    shots = 10
+    backend= qt.Aer.get_backend("aer_simulator")
+    tqc = qt.transpile(circ,backend)
+    job = backend.run(tqc,shots=shots)
+    result = job.result()
+    counts = result.get_counts(tqc)
+    print("counts:",counts)
+    return counts
+
+
 def prob(qubit,fmin,fdelta,distrbution_type):
     '''
     Args:xs
@@ -146,7 +165,6 @@ def labelGate(circ,qr,anc,lab,target):
     circ.append(QFT_Gate,lab)
     #We should define bounds, currently pic a constant
     bound =2**(n-1)
-    print("bound:",bound)
     #Define ncut
 
     #You can change step size if we want smaller bounds
@@ -160,14 +178,9 @@ def labelGate(circ,qr,anc,lab,target):
 
         intcomp_gate_inv = qtool.integer_compare(circ, qr, target, anc, bound, wrap=True, uncomp=False, inverse=True, label='P'+str(i))
         circ.append(intcomp_gate_inv, [*qr, target[0], *anc[:]])
-
-        print("bound",bound)
-        print("i:",i)
         
     QFT_Gate = qtool.QFT(circ,lab,wrap=True)
     circ.append(QFT_Gate,lab)  
-    #circ.x(qr[-1])
-
     return circ
 
 def LinearPiecewise(circ,lab):
@@ -190,18 +203,21 @@ def LinearPiecewise(circ,lab):
     #Label register: label which section we are in
     #Coefficent register: Store coeefficent control on label
     if True:
+        #NOTE: These are currently hardcoded this needs to be generalised
+        #Easy to do, just need to make the number be variables based on the size of register being sent in
         qr = qt.QuantumRegister(6, 'q_reg')
         target = qt.QuantumRegister(1, 'q_targ')
         anc = qt.QuantumRegister(6, 'q_ans')
         lab = qt.QuantumRegister(5, 'q_lab')
         circ = qt.QuantumCircuit(qr, target, anc, lab) 
 
-    input_gate =inputValue(circ,qr,[1,0,0,0,0,0])
-    circ.append(input_gate,qr)
-    label_gate_add =labelGate(circ,qr,anc,lab,target)
-    circ.append(label_gate_add,lab)
-    circ.draw("mpl")
-    plt.show()
+    input_gate_add =inputValue(circ,qr,[1,0,0,0,0,0])
+    circ.append(input_gate_add,qr)
+    #Adds the labels to the different subdomains based on the value from 
+    label_Gate_add = labelGate(circ,qr,anc,lab,target)
+    circ.append(label_Gate_add,[*qr,*anc,*lab,target[0]])
+    #circ.draw("mpl")
+    #plt.show()
 
 def xGateAdd(m,pattern,qc,qr,theta_array,n):
     '''Adds the X gates and the Rcy Gates for small values of m
@@ -298,16 +314,10 @@ if __name__ == "__main__":
     circ = qt.QuantumCircuit(qr,anc,lab,target,classical)
     result = inputValue(circ,qr,[1,0,0,0])
     circ.append(result,qr)
-    labelGate(circ,qr,anc,lab,target)
+    label_Gate_add = labelGate(circ,qr,anc,lab,target)
+    circ.append(label_Gate_add,[*qr,*anc,*lab,target[0]])
     #result = inputValue(circ,qr,[1,0,0,0,0,0])
+    circ.draw("mpl")
+    plt.show()
 
-    '''circ.append(result,qr)
-    circ.measure(qr,classical)
-    shots = 10
-    backend= qt.Aer.get_backend("aer_simulator")
-    tqc = qt.transpile(circ,backend)
-    job = backend.run(tqc,shots=shots)
-    result = job.result()
-    counts = result.get_counts(tqc)
-    print("counts:",counts) '''
 
