@@ -25,6 +25,21 @@ def quick_measure(circ,q_reg,cla_reg):
     print("counts:",counts)
     return counts
 
+def calculateCoffs(X_data,Y_data):
+    """
+    Args:
+    Takes in two data points
+    Returns:
+    List with two coffcents 
+    """
+    A = np.vstack([X_data, np.ones(len(X_data))]).T
+    print(A)
+    m = (Y_data[0]-Y_data[1])/(X_data[0]-X_data[1])
+    c = -(m*X_data[0]) + Y_data[0]
+
+    result =[m,c]
+    print(result)
+    return result
 
 def prob(qubit,fmin,fdelta,distrbution_type):
     '''
@@ -181,6 +196,8 @@ def labelGate(circ,qr,anc,lab,target):
         
     QFT_Gate = qtool.QFT(circ,lab,wrap=True)
     circ.append(QFT_Gate,lab)  
+    #Left over from fergus code unsure why this here currently
+    #circ.x(qr[-1])
     return circ
 
 def LinearPiecewise(circ,lab):
@@ -207,6 +224,7 @@ def LinearPiecewise(circ,lab):
         #Easy to do, just need to make the number be variables based on the size of register being sent in
         qr = qt.QuantumRegister(6, 'q_reg')
         target = qt.QuantumRegister(1, 'q_targ')
+        coff = qt.QuantumRegister(6,"q_coff")
         anc = qt.QuantumRegister(6, 'q_ans')
         lab = qt.QuantumRegister(5, 'q_lab')
         circ = qt.QuantumCircuit(qr, target, anc, lab) 
@@ -216,6 +234,20 @@ def LinearPiecewise(circ,lab):
     #Adds the labels to the different subdomains based on the value from 
     label_Gate_add = labelGate(circ,qr,anc,lab,target)
     circ.append(label_Gate_add,[*qr,*anc,*lab,target[0]])
+    #Load in coefficents
+    input_gate_add =inputValue(circ,coff,[1,0,0,0,0,0])
+
+    #Multiply into the x register
+
+    #Unload coefficents
+
+    #Load in coefficents
+
+    #Add the coefficent with 
+
+    #Unload coefficents
+
+
     #circ.draw("mpl")
     #plt.show()
 
@@ -305,7 +337,7 @@ if __name__ == "__main__":
     #test = qtool.my_binary_repr(1.25,6,nint=1 )
     #print(test)
     #Grover_Rudolph_func(5,[0,1,2,3,4,5,6,7])
-    qr= qt.QuantumRegister(size=4,name='q')
+    '''qr= qt.QuantumRegister(size=4,name='q')
     # We then will add 6 bits for the ancillary register 
     anc = qt.QuantumRegister(size=4,name='anc')
     lab = qt.QuantumRegister(size=3,name='lab')
@@ -318,6 +350,7 @@ if __name__ == "__main__":
     circ.append(label_Gate_add,[*qr,*anc,*lab,target[0]])
     #result = inputValue(circ,qr,[1,0,0,0,0,0])
     circ.draw("mpl")
-    plt.show()
+    plt.show()'''
+    calculateCoffs([4,5],[8,6])
 
 
