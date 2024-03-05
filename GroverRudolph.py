@@ -3,7 +3,6 @@ It should take a probabiltiy distribution and encoded it into a quantum state of
 import qiskit as qt
 import matplotlib.pyplot as plt
 import numpy as np
-import scipy
 import Quantum_Tools as qtool
 from qiskit.circuit.library.standard_gates import RYGate
 import Linear_Piecewise as lpw
@@ -198,20 +197,33 @@ if __name__ == "__main__":
     #test = qtool.my_binary_repr(1.25,6,nint=1 )
     #print(test)
     #Grover_Rudolph_func_small(5,[0,1,2,3,4,5,6,7])
-    '''qr= qt.QuantumRegister(size=4,name='q')
+    qr= qt.QuantumRegister(size=4,name='q')
     # We then will add 6 bits for the ancillary register 
     anc = qt.QuantumRegister(size=4,name='anc')
     lab = qt.QuantumRegister(size=3,name='lab')
     target = qt.QuantumRegister(size=1,name='tar')
     classical = qt.ClassicalRegister(size=4,name="cla")
-    circ = qt.QuantumCircuit(qr,anc,lab,target,classical)
-    result = inputValue(circ,qr,[1,0,0,0])
+    circ = qt.QuantumCircuit(qr,target,anc,lab,classical)
+    result = lpw.inputValue(circ,qr,[0,1,1,1]).to_instruction()
+
     circ.append(result,qr)
-    label_Gate_add = labelGate(circ,qr,anc,lab,target)
-    circ.append(label_Gate_add,[*qr,*anc,*lab,target[0]])
+
+    label_Gate_add = lpw.labelGate(circ,qr,target,anc,lab).to_instruction()
+    circ.append(label_Gate_add,[*qr,target[0],*anc,*lab,])
+    circ.measure(target[0],classical[0])
+    shots = 10
+    backend= qt.Aer.get_backend("aer_simulator")
+    tqc = qt.transpile(circ,backend)
+    job = backend.run(tqc,shots=shots)
+    result = job.result()
+    counts = result.get_counts(tqc)
+    print("counts:",counts)
+
+    circ.decompose().decompose().decompose().draw("mpl")
+    plt.show()
+    
     #result = inputValue(circ,qr,[1,0,0,0,0,0])
-    circ.draw("mpl")
-    plt.show()'''
+
     lpw.calculateCoffs([4,5],[8,6])
 
 
