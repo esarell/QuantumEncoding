@@ -219,7 +219,7 @@ if __name__ == "__main__":
     counts = result.get_counts(tqc)
     print("counts:",counts)
 
-    circ.decompose().decompose().decompose().draw("mpl")
+    circ.decompose().draw("mpl")
     plt.show()
     
     #result = inputValue(circ,qr,[1,0,0,0,0,0])

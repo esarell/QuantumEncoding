@@ -144,7 +144,7 @@ def load_coefficents(circ, qcoff, qlab, coeffs_in, nint=None, phase=False, wrap=
         if comp2:
             #input_gate = inputValue(, circ, wrap=True).control(nlab)
             current_coff =qtool.my_binary_repr(coeffs_in[i], n, nint=nint, phase=phase)
-            input_gate =inputValue(circ, qcoff,current_coff).control(nlab).to_gate(label="A1")
+            input_gate =inputValue(circ, qcoff,current_coff).control(nlab)
             circ=circ.compose(input_gate, [*qcoff,*qlab])
         '''else:
             input_gate = inputValue(qtool.my_binary_repr(np.abs(coeffs_in[i]), n-1, nint=nint, phase=False), circ, reg=qcoff[:-1], wrap=True).control(nlab)
@@ -171,7 +171,7 @@ def load_coefficents(circ, qcoff, qlab, coeffs_in, nint=None, phase=False, wrap=
     
     return circ
 
-def LinearPiecewise(circ,qr,lab,coff,anc,Xdata,Ydata):
+def LinearPiecewise(circ,qr,anc,coff,lab,target,Xdata,Ydata):
     """
     Function 
     Args:
@@ -196,11 +196,11 @@ def LinearPiecewise(circ,qr,lab,coff,anc,Xdata,Ydata):
         qr = qt.QuantumRegister(4, 'q_reg')
         #At some point make target bit be the first bit in the coff register
         #reduce the ampunt og qubits we are using
-        target = qt.QuantumRegister(1, 'q_targ')
-        coff = qt.QuantumRegister(4,"q_coff")
         anc = qt.QuantumRegister(4, 'q_ans')
+        coff = qt.QuantumRegister(4,"q_coff")
         lab = qt.QuantumRegister(3, 'q_lab')
-        circ = qt.QuantumCircuit(qr, target, anc, lab) 
+        target = qt.QuantumRegister(1, 'q_targ')
+        circ = qt.QuantumCircuit(qr,anc,coff,lab,target) 
 
     #Bounds are gonna be equal to the Xdata?
     bounds = Xdata
@@ -222,12 +222,12 @@ def LinearPiecewise(circ,qr,lab,coff,anc,Xdata,Ydata):
     input_gate_add =inputValue(circ,qr,[1,0,0,0])
     circ.append(input_gate_add,qr)
     #Adds the labels to the different subdomains based on the value from 
-    label_Gate_add = labelGate(circ,qr,anc,lab,target)
-    circ.append(label_Gate_add,[*qr,*anc,*lab,target[0]])
+    label_Gate_add = labelGate(circ,qr,target,anc,lab).to_instruction()
+    circ.append(label_Gate_add,[*qr,target[0],*anc,*lab,])
 
     #Convert coeffiencents to binary representation
-    #input_gate_add = load_coefficents(circ,coff,lab,A1_coeffs)
-    #circ.append(input_gate_add,[*coff,*lab])
+    input_gate_add = load_coefficents(circ,coff,lab,A1_coeffs).to_gate()
+    circ.append(input_gate_add,[*lab,*coff])
     #Multiply into the x register
 
     #Unload coefficents
@@ -241,27 +241,38 @@ def LinearPiecewise(circ,qr,lab,coff,anc,Xdata,Ydata):
 
     #circ.draw("mpl")
     #plt.show()
+    return circ
 
 if __name__ == "__main__":
     #test = qtool.my_binary_repr(1.25,6,nint=1 )
     #print(test)
-    
     qr= qt.QuantumRegister(size=4,name='q')
     # We then will add 6 bits for the ancillary register 
     anc = qt.QuantumRegister(size=4,name='anc')
     lab = qt.QuantumRegister(size=3,name='lab')
+    target = qt.QuantumRegister(size=1,name='tar')
     coff = qt.QuantumRegister(size=4,name='coff')
+    circ = qt.QuantumCircuit(qr,target,anc,lab,coff)
+    '''qr= qt.QuantumRegister(size=4,name='q')
+    # We then will add 6 bits for the ancillary register 
+    anc = qt.QuantumRegister(size=4,name='anc')
+    lab = qt.QuantumRegister(size=3,name='lab')
+
     target = qt.QuantumRegister(size=1,name='tar')
     classical = qt.ClassicalRegister(size=4,name="cla")
-    circ = qt.QuantumCircuit(qr,anc,coff,lab,target,classical)
-    Xdata =[1,2,6,9,10]
-    Ydata=[2,3,6,7,8]
-    LinearPiecewise(circ,qr,lab,coff,anc,Xdata,Ydata)
+    circ = qt.QuantumCircuit(qr,anc,coff,lab,target,classical)'''
+    Xdata =[1,2,6,9,10,12,13,14,15]
+    Ydata=[2,3,6,7,9,12,14,17,18]
+    lpw_gate = LinearPiecewise(circ,qr,anc,coff,lab,target,Xdata,Ydata)
+    circ = circ.compose(lpw_gate,[*qr,*anc,*coff,*lab,*target])
     '''result = inputValue(circ,qr,[1,0,0,0])
     circ.append(result,qr)
     label_Gate_add = labelGate(circ,qr,anc,lab,target)
     circ.append(label_Gate_add,[*qr,*anc,*lab,target[0]])
     #result = inputValue(circ,qr,[1,0,0,0,0,0])
-    circ.draw("mpl")
-    plt.show()'''
+    '''
+    #input_gate_add = load_coefficents(circ,coff,lab,Xdata).to_gate()
+    #circ.append(input_gate_add,[*lab,*coff])
     #calculateCoffs([4,5],[8,6])
+    circ.decompose().draw("mpl")
+    plt.show()
