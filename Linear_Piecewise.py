@@ -83,7 +83,7 @@ def labelGate(circ,qr,target,anc,lab):
     QFT_Gate = qtool.QFT(circ,lab,wrap=True)
     circ.append(QFT_Gate,lab)
     #We should define bounds, currently pic a constant
-    bound =8
+    bound =7
     #Define ncut
 
     #You can change step size if we want smaller bounds
@@ -99,18 +99,19 @@ def labelGate(circ,qr,target,anc,lab):
         intcomp_gate_inv = qtool.integer_compare(circ, qr, target, anc,bound, wrap=True, uncomp=False, inverse=True, label='P'+str(i))
         circ.append(intcomp_gate_inv, [*qr, target[0], *anc[:]])
   
-    QFT_Gate = qtool.QFT(circ,lab,wrap=True)
-    circ.append(QFT_Gate,lab)  
+    QFT_Gate_inv = qtool.QFT(circ,lab,wrap=True,inverse=True,do_swaps=False)
+    circ.append(QFT_Gate_inv,lab)
+
     #Left over from fergus code unsure why this here currently
     #circ.x(qr[-1])
 
-    if False:
+    if True:
         circ = circ.to_gate()
         circ.label = "LABEL GATE"
 
     return circ
 
-def load_coefficents(circ, qcoff, qlab, coeffs_in, nint=None, phase=False, wrap=False, inverse=False, label='FIRST', comp2=True):
+def load_coefficents(circ, qcoff, qlab, coeffs_in, nint=None, phase=False, wrap=False, inverse=False, label='Load\nCoff', comp2=True):
     """"Adapted from first_gate as seen in the qiskit_tools.py file"""
     n = len(qcoff)
     nlab = len(qlab)
@@ -161,14 +162,13 @@ def load_coefficents(circ, qcoff, qlab, coeffs_in, nint=None, phase=False, wrap=
             if control_bit=='0' and prev_control[j]=='1':
                 #Undos the increment of the lab
                 circ.x(qlab[j])
-    if wrap:
+    if True:
         circ = circ.to_gate()
         circ.label = label
-
-    if inverse:
-        circ = circ.inverse()
-        circ.label = label+'†'
-    
+        if inverse:
+            circ = circ.inverse()
+            circ.label = label+'†'
+        
     return circ
 
 def LinearPiecewise(circ,qr,anc,coff,lab,target,Xdata,Ydata):
@@ -222,16 +222,19 @@ def LinearPiecewise(circ,qr,anc,coff,lab,target,Xdata,Ydata):
     input_gate_add =inputValue(circ,qr,[1,0,0,0])
     circ.append(input_gate_add,qr)
     #Adds the labels to the different subdomains based on the value from 
-    label_Gate_add = labelGate(circ,qr,target,anc,lab).to_instruction()
+    label_Gate_add = labelGate(circ,qr,target,anc,lab)
     circ.append(label_Gate_add,[*qr,target[0],*anc,*lab,])
 
     #Convert coeffiencents to binary representation
-    input_gate_add = load_coefficents(circ,coff,lab,A1_coeffs).to_gate()
+    input_gate_add = load_coefficents(circ,coff,lab,A1_coeffs,wrap=True)
     circ.append(input_gate_add,[*lab,*coff])
-    #Multiply into the x register
+    #Multiply with the x register into anc
+    multiple_gate_add = qtool.QFTMultiply(circ,qr,coff,anc,nint3=4,wrap=True)
+    circ.append(multiple_gate_add,[*qr,*coff,*anc])
 
     #Unload coefficents
-
+    input_gate_add = load_coefficents(circ,coff,lab,A1_coeffs,inverse=True)
+    circ.append(input_gate_add,[*lab,*coff])
     #Load in coefficents
 
     #Add the coefficent with 
@@ -252,7 +255,8 @@ if __name__ == "__main__":
     lab = qt.QuantumRegister(size=3,name='lab')
     target = qt.QuantumRegister(size=1,name='tar')
     coff = qt.QuantumRegister(size=4,name='coff')
-    circ = qt.QuantumCircuit(qr,target,anc,lab,coff)
+    cla_reg =qt.ClassicalRegister(size=3,name="cla")
+    circ = qt.QuantumCircuit(qr,target,anc,lab,coff,cla_reg)
     '''qr= qt.QuantumRegister(size=4,name='q')
     # We then will add 6 bits for the ancillary register 
     anc = qt.QuantumRegister(size=4,name='anc')
@@ -265,6 +269,8 @@ if __name__ == "__main__":
     Ydata=[2,3,6,7,9,12,14,17,18]
     lpw_gate = LinearPiecewise(circ,qr,anc,coff,lab,target,Xdata,Ydata)
     circ = circ.compose(lpw_gate,[*qr,*anc,*coff,*lab,*target])
+    #gate_1 = qtool.QFTMultiply(circ,qr,coff,anc,nint3=4,wrap=True)
+    #circ = circ.compose(gate_1,[*qr,*coff,*anc])
     '''result = inputValue(circ,qr,[1,0,0,0])
     circ.append(result,qr)
     label_Gate_add = labelGate(circ,qr,anc,lab,target)
@@ -274,5 +280,14 @@ if __name__ == "__main__":
     #input_gate_add = load_coefficents(circ,coff,lab,Xdata).to_gate()
     #circ.append(input_gate_add,[*lab,*coff])
     #calculateCoffs([4,5],[8,6])
-    circ.decompose().draw("mpl")
+    circ.measure(lab,cla_reg)
+    shots = 100
+    backend= qt.Aer.get_backend("aer_simulator")
+    tqc = qt.transpile(circ,backend)
+    job = backend.run(tqc,shots=shots)
+    result = job.result()
+    counts = result.get_counts(tqc)
+    print("counts:",counts)
+
+    circ.draw("mpl")
     plt.show()

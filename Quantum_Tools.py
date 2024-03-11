@@ -5,7 +5,7 @@ from qiskit.circuit.library.basis_change import QFT as QFT_pre
 #from qiskit.extensions import HamiltonianGate
 #from qiskit.circuit.library.standard_gates import PhaseGate, RYGate, CSwapGate
 #from qiskit.circuit.library.arithmetic.integer_comparator import IntegerComparator
-from qiskit.circuit.library.standard_gates import XGate
+from qiskit.circuit.library.standard_gates import XGate, PhaseGate
 from qiskit.quantum_info import Pauli
 from qiskit.circuit.library.boolean_logic import OR
 #from qiskit.quantum_info import random_unitary
@@ -35,7 +35,7 @@ twos_compliment
 def QFT(circ, qreg, do_swaps=True, approximation_degree=0., insert_barriers=False, wrap=False, inverse=False, label='QFT'):
 
     n = len(qreg)
-
+    print("QFT")
     if inverse:
         wrap = True
 
@@ -99,7 +99,8 @@ def QFTBinaryAdd(circ, qreg, binary, wrap=False, inverse=False, QFT_on=True, iQF
     """
     n1 = len(qreg)
     n2 = len(binary)
-
+    print("n1:",n1)
+    print("binary:",binary)
     if inverse:
         wrap = True
 
@@ -114,11 +115,11 @@ def QFTBinaryAdd(circ, qreg, binary, wrap=False, inverse=False, QFT_on=True, iQF
     for i in np.arange(1, n1 + 1):
         for k in np.arange(1, n2 + 1):
             lam = (2. * np.pi) / (2. ** (i + k - n2))
-            if lam%(2*np.pi)==0.:
+            if lam%(2*np.pi)==0.:    
                 continue
             if binary[i-1]=='1':
                 circ.p(lam,qreg[k-1])
-                #print("check")
+                print("check")
 
     if iQFT_on:
         circ.append(QFT(circ, qreg, do_swaps=False, wrap=True, inverse=True), qreg[:])
@@ -320,6 +321,63 @@ def integer_compare(circ, qreg, qtarg, qans ,value, geq=True, wrap=True, inverse
 
     return circ
 
+def QFTMultiply(circ, qreg1, qreg2, qreg3, A=1., wrap=False, inverse=False, nint1=None, nint2=None, nint3=None, phase=False, label='Mult', QFT_on=True, iQFT_on=True):
+    """
+    |qreg1>|qreg2>|qreg3> -> |qreg1>|qreg2>|qreg1 x qreg2>
+    """
+    n1 = len(qreg1)
+    n2 = len(qreg2)
+    n3 = len(qreg3)
+    print("n1",n1)
+    print("n2",n2)
+    print("n3",n3)
+    if n3!=n1+n2 and nint3 == None:
+        raise ValueError('Output register should be the combined length of both input registers if no integer bit length is specified.')
+
+    if nint1==None:
+        nint1=n1
+    if nint2==None:
+        nint2=n2
+    if nint3==None:
+        nint3=n3
+    
+    nshift = (nint1 + nint2)-nint3
+
+    if phase:
+        nshift+=1
+
+    if inverse:
+        wrap = True
+
+    if wrap:
+        qreg1 = QuantumRegister(n1, 'q_reg1')
+        qreg2 = QuantumRegister(n2, 'q_reg2')
+        qreg3 = QuantumRegister(n3, 'q_reg3')
+        circ = QuantumCircuit(qreg1, qreg2, qreg3)
+
+    if QFT_on:
+        circ.append(QFT(circ, qreg3, do_swaps=False, wrap=True), qreg3[:])
+
+    for j in np.arange(1, n1 + 1):
+        for i in np.arange(1, n2 + 1):
+            for k in np.arange(1, n3 + 1):
+                lam = A*(2 * np.pi) / (2. ** (i + j + k - n3 - nshift))
+                if lam%(2*np.pi)==0.:
+                    continue
+                circ.append(PhaseGate(lam).control(2),[qreg1[n1 - j], qreg2[n2 - i], qreg3[k - 1]])
+
+    if iQFT_on:
+        circ.append(QFT(circ, qreg3, do_swaps=False, wrap=True, inverse=True), qreg3[:])
+
+    if wrap:
+        circ = circ.to_gate()
+        circ.label = label
+
+    if inverse:
+        circ = circ.inverse()
+        circ.label = label+'\dag'
+
+    return circ
 
 if __name__ == "__main__":
     n=4
