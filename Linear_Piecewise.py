@@ -275,7 +275,8 @@ def LinearPiecewise(circ,qr,anc,coff,lab,target,Xdata,Ydata):
     input_gate_add = load_coefficents(circ,lab,coff,A0_coeffs,wrap=True)
     circ.append(input_gate_add,[*lab,*coff])
     #Add the coefficent with 
-
+    add_gate = qtool.QFTAddition_(circ,coff,anc,wrap=True)
+    circ.append(add_gate,[*coff,*anc])
     #Unload A0 coefficents
     input_gate_add = load_coefficents(circ,lab,coff,A0_coeffs,wrap=True,inverse=True)
     circ.append(input_gate_add,[*lab,*coff])
@@ -293,7 +294,7 @@ if __name__ == "__main__":
     lab = qt.QuantumRegister(size=3,name='lab')
     target = qt.QuantumRegister(size=1,name='tar')
     coff = qt.QuantumRegister(size=4,name='coff')
-    cla_reg =qt.ClassicalRegister(size=3,name="cla")
+    cla_reg =qt.ClassicalRegister(size=4,name="cla")
     circ = qt.QuantumCircuit(qr,target,anc,lab,coff,cla_reg)
     '''qr= qt.QuantumRegister(size=4,name='q')
     # We then will add 6 bits for the ancillary register 
@@ -328,7 +329,7 @@ if __name__ == "__main__":
     counts = result.get_counts(tqc)
     print("counts anc:",counts)'''
 
-    circ.measure(lab,cla_reg)
+    circ.measure(anc,cla_reg)
     shots = 100
     backend= qt.Aer.get_backend("aer_simulator")
     tqc = qt.transpile(circ,backend)

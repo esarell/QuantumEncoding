@@ -378,6 +378,54 @@ def QFTMultiply(circ, qreg1, qreg2, qreg3, A=1., wrap=False, inverse=False, nint
         circ.label = label+'\dag'
 
     return circ
+def QFTAddition_(circ, qreg1, qreg2, wrap=False, inverse=False, label='Add', QFT_on=True, iQFT_on=True, pm=1, phase=False):
+    r"""
+    |qreg1>|qreg2> -> |qreg1>|qreg2 + qreg1>
+    """
+    n1 = len(qreg1)
+    n2 = len(qreg2)
+
+    if inverse:
+        wrap = True
+
+    if wrap:
+        qreg1 = QuantumRegister(n1, 'q_reg1')
+        qreg2 = QuantumRegister(n2, 'q_reg2')
+        circ = QuantumCircuit(qreg1, qreg2)
+
+    if QFT_on:
+        circ.append(QFT(circ, qreg2, do_swaps=False, wrap=True), qreg2[:])
+
+    jend = n1
+    if phase and n1!=n2:
+        circ.append(twos_compliment(circ, qreg1[:-1], wrap=True).control(1), [qreg1[-1], *qreg1[:-1]]);
+        jend -= 1
+
+    for j in np.arange(0,jend):
+        for l in np.arange(0,n2):
+            lam = pm*2*np.pi*2.**(j-l-1)
+            if lam%(2*np.pi)==0:
+                continue
+            circ.cp(lam, qreg1[j], qreg2[l])
+            if phase and n1!=n2 and lam%np.pi!=0:
+                circ.append(PhaseGate(-2.*lam).control(2), [qreg1[-1], qreg1[j], qreg2[l]]);
+
+    if phase and n1!=n2:
+        circ.append(twos_compliment(circ, qreg1[:-1], wrap=True).control(1), [qreg1[-1], *qreg1[:-1]]);
+
+    if iQFT_on:
+        circ.append(QFT(circ, qreg2, do_swaps=False, wrap=True, inverse=True), qreg2[:])
+
+    if wrap:
+        circ = circ.to_gate()
+        circ.label = label
+
+    if inverse:
+        circ = circ.inverse()
+        circ.label = label+'†'
+
+    return circ
+
 
 if __name__ == "__main__":
     n=4
