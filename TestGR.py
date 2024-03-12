@@ -8,7 +8,7 @@ def TestSimpleDistribution():
     '''
     distribution = PD.straightLine(3)
     print(distribution)
-    amplitude = GR.Grover_Rudolph_func(3,distribution)
+    amplitude = GR.Grover_Rudolph_func_small(3,distribution)
     print(amplitude)
     if amplitude == distribution:
         return True
