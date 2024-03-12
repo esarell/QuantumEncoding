@@ -58,6 +58,22 @@ def inputValue(circ,qr,value,wrap=False):
         circ = circ.to_gate()
         circ.label ="Input"
     return circ
+def initalSuperpostion(circ,qr,wrap=True):
+    ''' '''
+    reg_size = len(qr)
+    if wrap == True:
+        qr = qt.QuantumRegister(reg_size, 'q_reg')
+        circ = qt.QuantumCircuit(qr) 
+    
+    for i in range(reg_size):
+        circ.h(qr[i])
+
+    if wrap == True:
+        circ = circ.to_gate()
+        circ.label ="Init H"
+
+    return circ
+
 
 def labelGate(circ,qr,target,anc,lab):
     """
@@ -174,8 +190,8 @@ def load_coefficents(circ, qlab, qcoff, coeffs_in, nint=None, phase=False, wrap=
                 #Undos the increment of the lab
                 circ.x(qlab[j])
                 print("undo at j:",j)
-    circ.decompose().draw("mpl")
-    plt.plot()
+    #circ.decompose().draw("mpl")
+    #plt.plot()
     if True:
         circ = circ.to_gate()
         circ.label = label
@@ -234,8 +250,13 @@ def LinearPiecewise(circ,qr,anc,coff,lab,target,Xdata,Ydata):
     print("A1",A1_coeffs)
     print("A0",A0_coeffs)
 
-    input_gate_add =inputValue(circ,qr,[1,0,0,0])
-    circ.append(input_gate_add,qr)
+    #input_gate_add =inputValue(circ,qr,[1,0,0,0])
+    #circ.append(input_gate_add,qr)
+
+    #set up the qr so that they are all in a equal superpostion with each other
+    #Might move this out of the linear piece wise function unsure if it should be here or just done at the start of gr
+    initalise_gate = initalSuperpostion(circ,qr)
+    circ.append(initalise_gate,[*qr])
     #Adds the labels to the different subdomains based on the value from 
     label_Gate_add = labelGate(circ,qr,target,anc,lab)
     circ.append(label_Gate_add,[*qr,target[0],*anc,*lab,])
@@ -250,12 +271,14 @@ def LinearPiecewise(circ,qr,anc,coff,lab,target,Xdata,Ydata):
     #Unload coefficents
     input_gate_add = load_coefficents(circ,lab,coff,A1_coeffs,wrap=True,inverse=True)
     circ.append(input_gate_add,[*lab,*coff])
-    #Load in coefficents
-
+    #Load in A0 coefficents
+    input_gate_add = load_coefficents(circ,lab,coff,A0_coeffs,wrap=True)
+    circ.append(input_gate_add,[*lab,*coff])
     #Add the coefficent with 
 
-    #Unload coefficents
-
+    #Unload A0 coefficents
+    input_gate_add = load_coefficents(circ,lab,coff,A0_coeffs,wrap=True,inverse=True)
+    circ.append(input_gate_add,[*lab,*coff])
 
     #circ.draw("mpl")
     #plt.show()
@@ -270,7 +293,7 @@ if __name__ == "__main__":
     lab = qt.QuantumRegister(size=3,name='lab')
     target = qt.QuantumRegister(size=1,name='tar')
     coff = qt.QuantumRegister(size=4,name='coff')
-    cla_reg =qt.ClassicalRegister(size=4,name="cla")
+    cla_reg =qt.ClassicalRegister(size=3,name="cla")
     circ = qt.QuantumCircuit(qr,target,anc,lab,coff,cla_reg)
     '''qr= qt.QuantumRegister(size=4,name='q')
     # We then will add 6 bits for the ancillary register 
@@ -280,8 +303,8 @@ if __name__ == "__main__":
     target = qt.QuantumRegister(size=1,name='tar')
     classical = qt.ClassicalRegister(size=4,name="cla")
     circ = qt.QuantumCircuit(qr,anc,coff,lab,target,classical)'''
-    Xdata =[1,2,6,9,10,12,13,14,15]
-    Ydata=[2,3,6,7,9,12,14,17,18]
+    Xdata =[1,2,3,4,5,6,7,8,9]
+    Ydata=[3,5,6,7,8,9,9,10,11]
     lpw_gate = LinearPiecewise(circ,qr,anc,coff,lab,target,Xdata,Ydata)
     circ = circ.compose(lpw_gate,[*qr,*anc,*coff,*lab,*target])
     #gate_1 = qtool.QFTMultiply(circ,qr,coff,anc,nint3=4,wrap=True)
@@ -292,26 +315,27 @@ if __name__ == "__main__":
     circ.append(label_Gate_add,[*qr,*anc,*lab,target[0]])
     #result = inputValue(circ,qr,[1,0,0,0,0,0])
     '''
+
     #input_gate_add = load_coefficents(circ,coff,lab,Xdata).to_gate()
     #circ.append(input_gate_add,[*lab,*coff])
     #calculateCoffs([4,5],[8,6])
-    circ.measure(anc,cla_reg)
+    '''circ.measure(anc,cla_reg)
     shots = 100
     backend= qt.Aer.get_backend("aer_simulator")
     tqc = qt.transpile(circ,backend)
     job = backend.run(tqc,shots=shots)
     result = job.result()
     counts = result.get_counts(tqc)
-    print("counts anc:",counts)
+    print("counts anc:",counts)'''
 
-    circ.measure(coff,cla_reg)
+    circ.measure(lab,cla_reg)
     shots = 100
     backend= qt.Aer.get_backend("aer_simulator")
     tqc = qt.transpile(circ,backend)
     job = backend.run(tqc,shots=shots)
     result = job.result()
     counts = result.get_counts(tqc)
-    print("counts coff:",counts)
+    print("counts:",counts)
 
     circ.draw("mpl")
     plt.show()
