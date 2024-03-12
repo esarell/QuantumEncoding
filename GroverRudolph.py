@@ -165,6 +165,35 @@ def Grover_Rudolph_func_small(n,distribution):
     qc.draw("mpl")
     plt.show()
 
+def ThetaRotation(circ,qr,anc,bit,wrap =True):
+    '''Args:
+    circ: quantum circuit
+    qr: quantum register
+    anc: quantum register
+    bit: number of which bit in qr register you want rotations applied to 
+    wrap: boolean turns indivdual gates into one big gate defualt True 
+    Returns: circuit with added Y Rotation gates which are condintional on anc Reg '''
+    size_qr = len(qr)
+    size_anc =len(anc)
+    if wrap == True:
+        qr =qt.QuantumRegister(size_qr,"qr")
+        anc = qt.QuantumRegister(size_anc,"anc")
+        circ = qt.QuantumCircuit(qr,anc)
+
+    for i in range(size_anc):
+        temp = i-(size_anc-1)
+        theta = 2**(temp)
+        rotation_gate = RYGate(theta).control(1)
+        circ.append(rotation_gate,[anc[i],qr[bit]])
+
+    if wrap ==True:
+        circ = circ.to_gate()
+        circ.label = "Ry Theta" 
+
+    return circ
+    
+
+
 def GR_function(n,data):
     """Args: For when m>5
     n: the number of qubits for our circuit
@@ -178,14 +207,15 @@ def GR_function(n,data):
 if __name__ == "__main__":
     #test = qtool.my_binary_repr(1.25,6,nint=1 )
     #print(test)
-    Grover_Rudolph_func_small(6,[0,1,2,3,4,5,6,7,8,10])
-    '''qr= qt.QuantumRegister(size=4,name='q')
+    #Grover_Rudolph_func_small(6,[0,1,2,3,4,5,6,7,8,10])
+    qr= qt.QuantumRegister(size=4,name='q')
     # We then will add 6 bits for the ancillary register 
-    anc = qt.QuantumRegister(size=4,name='anc')
-    lab = qt.QuantumRegister(size=3,name='lab')
-    target = qt.QuantumRegister(size=1,name='tar')
-    classical = qt.ClassicalRegister(size=4,name="cla")
-    circ = qt.QuantumCircuit(qr,target,anc,lab,classical)
+    anc = qt.QuantumRegister(size=9,name='anc')
+    #lab = qt.QuantumRegister(size=3,name='lab')
+    #target = qt.QuantumRegister(size=1,name='tar')
+    #classical = qt.ClassicalRegister(size=4,name="cla")
+    circ = qt.QuantumCircuit(qr,anc)
+    '''
     result = lpw.inputValue(circ,qr,[0,1,1,1]).to_instruction()
 
     circ.append(result,qr)
@@ -200,12 +230,13 @@ if __name__ == "__main__":
     result = job.result()
     counts = result.get_counts(tqc)
     print("counts:",counts)'''
-
-    #circ.decompose().draw("mpl")
-    #plt.show()
+    rotational = ThetaRotation(circ,qr,anc,1)
+    circ.append(rotational,[*qr,*anc])
+    circ.decompose().draw("mpl")
+    plt.show()
     
     #result = inputValue(circ,qr,[1,0,0,0,0,0])
 
-    lpw.calculateCoffs([4,5],[8,6])
+    #lpw.calculateCoffs([4,5],[8,6])
 
 
