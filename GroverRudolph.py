@@ -8,24 +8,6 @@ from qiskit.circuit.library.standard_gates import RYGate
 import Linear_Piecewise as lpw
 
 
-def quick_measure(circ,q_reg,cla_reg):
-    '''Just a simple function that will do a measurement 10 times and then print the results
-    Args:
-    circ: overal circuit
-    q_reg: the quantum register we are measureing
-    cla_reg: the classical register we are putting the result into
-    Return: 
-    counts: number  '''
-    circ.measure(q_reg,cla_reg)
-    shots = 10
-    backend= qt.Aer.get_backend("aer_simulator")
-    tqc = qt.transpile(circ,backend)
-    job = backend.run(tqc,shots=shots)
-    result = job.result()
-    counts = result.get_counts(tqc)
-    print("counts:",counts)
-    return counts
-
 def prob(qubit,fmin,fdelta,distrbution_type):
     '''
     Args:xs
@@ -196,8 +178,8 @@ def GR_function(n,data):
 if __name__ == "__main__":
     #test = qtool.my_binary_repr(1.25,6,nint=1 )
     #print(test)
-    #Grover_Rudolph_func_small(5,[0,1,2,3,4,5,6,7])
-    qr= qt.QuantumRegister(size=4,name='q')
+    Grover_Rudolph_func_small(6,[0,1,2,3,4,5,6,7,8,10])
+    '''qr= qt.QuantumRegister(size=4,name='q')
     # We then will add 6 bits for the ancillary register 
     anc = qt.QuantumRegister(size=4,name='anc')
     lab = qt.QuantumRegister(size=3,name='lab')
@@ -217,10 +199,10 @@ if __name__ == "__main__":
     job = backend.run(tqc,shots=shots)
     result = job.result()
     counts = result.get_counts(tqc)
-    print("counts:",counts)
+    print("counts:",counts)'''
 
-    circ.decompose().draw("mpl")
-    plt.show()
+    #circ.decompose().draw("mpl")
+    #plt.show()
     
     #result = inputValue(circ,qr,[1,0,0,0,0,0])
 
