@@ -19,6 +19,9 @@ jobs:
       - name: Running Grover-Rudolph Algorithm
         run: | 
           python -m GroverRudolph
+      - name: Running Linear-Piecewise Function
+        run: | 
+          python -m Linear_Piecewise
       - name: Testing
         run: |
           python -m TestGR
