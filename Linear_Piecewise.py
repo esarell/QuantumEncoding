@@ -35,7 +35,7 @@ def calculateCoffs(X_data,Y_data):
     print(result)
     return result
 
-def inputValue(circ,qr,value):
+def inputValue(circ,qr,value,wrap=False):
     """Args:
     circ: Current circuit
     qr: The register that we want to put our value in
@@ -43,16 +43,20 @@ def inputValue(circ,qr,value):
     Return:
     Circuit that has the value in the qr 
     This is just computation bais encoding"""
+    print("Running INPUT")
     if True:
         qr = qt.QuantumRegister(4, 'q_reg')
         circ = qt.QuantumCircuit(qr) 
     
     for i,value in enumerate((value[::-1])):
-        if value == 1:
+        if value == 1 or value =='1':
             circ.x(qr[i])
             print("appended at qubit:",i)
     #circ.draw("mpl")
     #plt.show()
+    if wrap ==True:
+        circ = circ.to_gate()
+        circ.label ="Input"
     return circ
 
 def labelGate(circ,qr,target,anc,lab):
@@ -111,22 +115,23 @@ def labelGate(circ,qr,target,anc,lab):
 
     return circ
 
-def load_coefficents(circ, qcoff, qlab, coeffs_in, nint=None, phase=False, wrap=False, inverse=False, label='Load\nCoff', comp2=True):
+def load_coefficents(circ, qlab, qcoff, coeffs_in, nint=None, phase=False, wrap=False, inverse=False, label='Load\nCoff', comp2=True):
     """"Adapted from first_gate as seen in the qiskit_tools.py file"""
     n = len(qcoff)
     nlab = len(qlab)
     print("n: ",n)
     print("nlab: ",nlab)
     if True:
-        qcoff = qt.QuantumRegister(n, 'q_coff')
         qlab = qt.QuantumRegister(nlab, 'q_lab')
-        circ = qt.QuantumCircuit(qcoff, qlab)  
+        qcoff = qt.QuantumRegister(n, 'q_coff')
+        circ = qt.QuantumCircuit(qlab,qcoff)  
 
     #Loops though the coefficents
     for i in np.arange(len(coeffs_in)):
         #converts index to binary
         print("label i:",i)
         control_bits = qtool.my_binary_repr(i, nlab, nint=None, phase=False)
+        print("i:",i)
         print(control_bits)
         #if greater than one takes the previous number and does in the binary but splitting the highest and lowest order
         if i>0:
@@ -141,17 +146,23 @@ def load_coefficents(circ, qcoff, qlab, coeffs_in, nint=None, phase=False, wrap=
             #This would increment the value of the lab
             if control_bit=='0' and prev_control[j]=='1':
                 circ.x(qlab[j])
+                print("append x at:",j)
         
         if comp2:
             #input_gate = inputValue(, circ, wrap=True).control(nlab)
             current_coff =qtool.my_binary_repr(coeffs_in[i], n, nint=nint, phase=phase)
-            input_gate =inputValue(circ, qcoff,current_coff).control(nlab)
-            circ=circ.compose(input_gate, [*qcoff,*qlab])
-        '''else:
+            print("coff:",current_coff)
+            input_gate =inputValue(circ, qcoff,current_coff,wrap=True).control(nlab)
+            circ.append(input_gate, [*qlab,*qcoff])
+            print("here")
+        else:
             input_gate = inputValue(qtool.my_binary_repr(np.abs(coeffs_in[i]), n-1, nint=nint, phase=False), circ, reg=qcoff[:-1], wrap=True).control(nlab)
             circ.append(input_gate, [*qlab, *qcoff[:-1]]);
             if coeffs_in[i]<0.:
-                circ.append(XGate().control(nlab), [*qlab, qcoff[-1]]);'''
+                xgate = circ.x().control(nlab)
+                circ.append(xgate,[*qlab, qcoff[-1]]) 
+                print("here2")
+                
 
         if i<len(coeffs_in)-1:
             prev_control = qtool.my_binary_repr(i+1, nlab, nint=nlab, phase=False)[::-1]
@@ -162,13 +173,17 @@ def load_coefficents(circ, qcoff, qlab, coeffs_in, nint=None, phase=False, wrap=
             if control_bit=='0' and prev_control[j]=='1':
                 #Undos the increment of the lab
                 circ.x(qlab[j])
+                print("undo at j:",j)
+    circ.decompose().draw("mpl")
+    plt.plot()
     if True:
         circ = circ.to_gate()
         circ.label = label
         if inverse:
             circ = circ.inverse()
             circ.label = label+'†'
-        
+
+    
     return circ
 
 def LinearPiecewise(circ,qr,anc,coff,lab,target,Xdata,Ydata):
@@ -226,14 +241,14 @@ def LinearPiecewise(circ,qr,anc,coff,lab,target,Xdata,Ydata):
     circ.append(label_Gate_add,[*qr,target[0],*anc,*lab,])
 
     #Convert coeffiencents to binary representation
-    input_gate_add = load_coefficents(circ,coff,lab,A1_coeffs,wrap=True)
+    input_gate_add = load_coefficents(circ,lab,coff,A1_coeffs,wrap=True)
     circ.append(input_gate_add,[*lab,*coff])
     #Multiply with the x register into anc
     multiple_gate_add = qtool.QFTMultiply(circ,qr,coff,anc,nint3=4,wrap=True)
     circ.append(multiple_gate_add,[*qr,*coff,*anc])
 
     #Unload coefficents
-    input_gate_add = load_coefficents(circ,coff,lab,A1_coeffs,inverse=True)
+    input_gate_add = load_coefficents(circ,lab,coff,A1_coeffs,wrap=True,inverse=True)
     circ.append(input_gate_add,[*lab,*coff])
     #Load in coefficents
 
@@ -255,7 +270,7 @@ if __name__ == "__main__":
     lab = qt.QuantumRegister(size=3,name='lab')
     target = qt.QuantumRegister(size=1,name='tar')
     coff = qt.QuantumRegister(size=4,name='coff')
-    cla_reg =qt.ClassicalRegister(size=3,name="cla")
+    cla_reg =qt.ClassicalRegister(size=4,name="cla")
     circ = qt.QuantumCircuit(qr,target,anc,lab,coff,cla_reg)
     '''qr= qt.QuantumRegister(size=4,name='q')
     # We then will add 6 bits for the ancillary register 
@@ -280,14 +295,23 @@ if __name__ == "__main__":
     #input_gate_add = load_coefficents(circ,coff,lab,Xdata).to_gate()
     #circ.append(input_gate_add,[*lab,*coff])
     #calculateCoffs([4,5],[8,6])
-    circ.measure(lab,cla_reg)
+    circ.measure(anc,cla_reg)
     shots = 100
     backend= qt.Aer.get_backend("aer_simulator")
     tqc = qt.transpile(circ,backend)
     job = backend.run(tqc,shots=shots)
     result = job.result()
     counts = result.get_counts(tqc)
-    print("counts:",counts)
+    print("counts anc:",counts)
+
+    circ.measure(coff,cla_reg)
+    shots = 100
+    backend= qt.Aer.get_backend("aer_simulator")
+    tqc = qt.transpile(circ,backend)
+    job = backend.run(tqc,shots=shots)
+    result = job.result()
+    counts = result.get_counts(tqc)
+    print("counts coff:",counts)
 
     circ.draw("mpl")
     plt.show()
