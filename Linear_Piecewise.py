@@ -44,8 +44,9 @@ def inputValue(circ,qr,value,wrap=False):
     Circuit that has the value in the qr 
     This is just computation bais encoding"""
     print("Running INPUT")
+    size_reg = len(qr)
     if True:
-        qr = qt.QuantumRegister(4, 'q_reg')
+        qr = qt.QuantumRegister(size_reg, 'q_reg')
         circ = qt.QuantumCircuit(qr) 
     
     for i,value in enumerate((value[::-1])):
@@ -89,14 +90,17 @@ def labelGate(circ,qr,target,anc,lab):
     """
     
     #We want to Wrap the stuff we are doing gets werid when we don't
+    n = len(qr)
+    size_anc = len(anc)
+    size_lab =len(lab)
+    size_tar = len(target)
     if True:
-        qr = qt.QuantumRegister(4, 'q_reg')
-        target = qt.QuantumRegister(1, 'q_targ')
-        anc = qt.QuantumRegister(4, 'q_ans')
-        lab = qt.QuantumRegister(3, 'q_lab')
+        qr = qt.QuantumRegister(n, 'q_reg')
+        target = qt.QuantumRegister(size_tar, 'q_targ')
+        anc = qt.QuantumRegister(size_anc, 'q_ans')
+        lab = qt.QuantumRegister(size_lab, 'q_lab')
         #classical = qt.ClassicalRegister(1,"classical")
         circ = qt.QuantumCircuit(qr, target, anc, lab) 
-    n=len(qr)
     #Left over from fergus code unsure why this here currently
     #circ.x(qr[-1])
     #Adding QFT to do counting in phase space
@@ -221,16 +225,21 @@ def LinearPiecewise(circ,qr,anc,coff,lab,target,Xdata,Ydata):
     #For this would this be my cos^2 theta 
     #Label register: label which section we are in
     #Coefficent register: Store coeefficent control on label
+    size_qr = len(qr)
+    size_anc = len(anc)
+    size_coff =len(coff)
+    size_lab =len(lab)
+    size_tar = len(target)
     if True:
         #NOTE: These are currently hardcoded this needs to be generalised
         #Easy to do, just need to make the number be variables based on the size of register being sent in
-        qr = qt.QuantumRegister(4, 'q_reg')
+        qr = qt.QuantumRegister(size_qr, 'q_reg')
         #At some point make target bit be the first bit in the coff register
         #reduce the ampunt og qubits we are using
-        anc = qt.QuantumRegister(4, 'q_ans')
-        coff = qt.QuantumRegister(4,"q_coff")
-        lab = qt.QuantumRegister(3, 'q_lab')
-        target = qt.QuantumRegister(1, 'q_targ')
+        anc = qt.QuantumRegister(size_anc, 'q_ans')
+        coff = qt.QuantumRegister(size_coff,"q_coff")
+        lab = qt.QuantumRegister(size_lab, 'q_lab')
+        target = qt.QuantumRegister(size_tar, 'q_targ')
         circ = qt.QuantumCircuit(qr,anc,coff,lab,target) 
 
     #Bounds are gonna be equal to the Xdata?
@@ -290,11 +299,11 @@ if __name__ == "__main__":
     #print(test)
     qr= qt.QuantumRegister(size=4,name='q')
     # We then will add 6 bits for the ancillary register 
-    anc = qt.QuantumRegister(size=4,name='anc')
+    anc = qt.QuantumRegister(size=9,name='anc')
     lab = qt.QuantumRegister(size=3,name='lab')
     target = qt.QuantumRegister(size=1,name='tar')
-    coff = qt.QuantumRegister(size=4,name='coff')
-    cla_reg =qt.ClassicalRegister(size=4,name="cla")
+    coff = qt.QuantumRegister(size=9,name='coff')
+    cla_reg =qt.ClassicalRegister(size=9,name="cla")
     circ = qt.QuantumCircuit(qr,target,anc,lab,coff,cla_reg)
     '''qr= qt.QuantumRegister(size=4,name='q')
     # We then will add 6 bits for the ancillary register 

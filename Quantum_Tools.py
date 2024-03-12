@@ -247,10 +247,11 @@ def increment_gate(circ, qreg, wrap=False, inverse=False, QFT_on=True, iQFT_on=T
 def integer_compare(circ, qreg, qtarg, qans ,value, geq=True, wrap=True, inverse=False, uncomp=True, label='P'):
     
     n = len(qreg)
+    size_anc =len(qans)
 
     if wrap:
         qreg = QuantumRegister(n, 'q_reg')
-        qans = QuantumRegister(n, 'q_ans')
+        qans = QuantumRegister(size_anc, 'q_ans')
         qtarg = QuantumRegister(1,'qtarg')
         circ = QuantumCircuit(qreg,qtarg, qans)
     if value<=0.:
