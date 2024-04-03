@@ -150,12 +150,13 @@ def load_coefficents(circ, qlab, qcoff, coeffs_in, nint=None, phase=False, wrap=
     for i in np.arange(len(coeffs_in)):
         #converts index to binary
         print("label i:",i)
-        control_bits = qtool.my_binary_repr(i, nlab, nint=None, phase=False)
+        
+        control_bits = qtool.my_binary_repr(i, nlab, nint=4, phase=True)
         print("i:",i)
         print(control_bits)
         #if greater than one takes the previous number and does in the binary but splitting the highest and lowest order
         if i>0:
-            prev_control = qtool.my_binary_repr(i-1, nlab, nint=nlab, phase=False)[::-1]
+            prev_control = qtool.my_binary_repr(i-1, nlab, nint=4, phase=True)[::-1]
         else:
             #if eq or less than zero then sets it all to zero
             prev_control = np.ones(nlab).astype(int).astype(str)
@@ -170,7 +171,8 @@ def load_coefficents(circ, qlab, qcoff, coeffs_in, nint=None, phase=False, wrap=
         
         if comp2:
             #input_gate = inputValue(, circ, wrap=True).control(nlab)
-            current_coff =qtool.my_binary_repr(coeffs_in[i], n, nint=nint, phase=phase)
+            print("coff:",coeffs_in[i])
+            current_coff =qtool.my_binary_repr(coeffs_in[i], n, nint=4, phase=True)
             print("coff:",current_coff)
             input_gate =inputValue(circ, qcoff,current_coff,wrap=True).control(nlab)
             circ.append(input_gate, [*qlab,*qcoff])
@@ -185,7 +187,7 @@ def load_coefficents(circ, qlab, qcoff, coeffs_in, nint=None, phase=False, wrap=
                 
 
         if i<len(coeffs_in)-1:
-            prev_control = qtool.my_binary_repr(i+1, nlab, nint=nlab, phase=False)[::-1]
+            prev_control = qtool.my_binary_repr(i+1, nlab, nint=5, phase=True)[::-1]
         else:
             prev_control = np.ones(nlab).astype(int).astype(str)
         
@@ -264,8 +266,8 @@ def LinearPiecewise(circ,qr,anc,coff,lab,target,Xdata,Ydata):
 
     #set up the qr so that they are all in a equal superpostion with each other
     #Might move this out of the linear piece wise function unsure if it should be here or just done at the start of gr
-    initalise_gate = initalSuperpostion(circ,qr)
-    circ.append(initalise_gate,[*qr])
+    #initalise_gate = initalSuperpostion(circ,qr)
+    #circ.append(initalise_gate,[*qr])
     #Adds the labels to the different subdomains based on the value from 
     label_Gate_add = labelGate(circ,qr,target,anc,lab)
     circ.append(label_Gate_add,[*qr,target[0],*anc,*lab,])
@@ -292,6 +294,9 @@ def LinearPiecewise(circ,qr,anc,coff,lab,target,Xdata,Ydata):
 
     #circ.draw("mpl")
     #plt.show()
+    if True:
+        circ = circ.to_gate()
+        circ.label ="Linear PW"
     return circ
 
 if __name__ == "__main__":
@@ -347,5 +352,5 @@ if __name__ == "__main__":
     counts = result.get_counts(tqc)
     print("counts:",counts)
 
-    circ.draw("mpl")
+    circ.decompose().draw("mpl")
     plt.show()

@@ -6,7 +6,7 @@ import numpy as np
 import Quantum_Tools as qtool
 from qiskit.circuit.library.standard_gates import RYGate
 import Linear_Piecewise as lpw
-
+from GenBounds import gen_bounds
 
 def prob(qubit,fmin,fdelta,distrbution_type):
     '''
@@ -194,15 +194,56 @@ def ThetaRotation(circ,qr,anc,bit,wrap =True):
     
 
 
-def GR_function(n,data):
+def GR_function(n):
     """Args: For when m>5
+    n,data
     n: the number of qubits for our circuit
     data: 
     We are gonna change data to be a 2d array of all the points from the spile that we want to encode
     Instead of it being a function 
     Returns: an encoded quantum circuit """
+    qr= qt.QuantumRegister(size=4,name='q')
+    anc = qt.QuantumRegister(size=9,name='anc')
+    lab = qt.QuantumRegister(size=3,name='lab')
+    target = qt.QuantumRegister(size=1,name='tar')
+    coff = qt.QuantumRegister(size=9,name='coff')
+    cla_reg =qt.ClassicalRegister(size=9,name="cla")
+    circ = qt.QuantumCircuit(qr,target,anc,lab,coff,cla_reg)
 
-    return 0
+    '''Currently this GR will only work for 1 qubit we still need to iterate though it '''
+    #Currently replacing the GR Small function at some point we will only apply this to 
+    #bits after m<5 or whatever we decide to do
+    initalise_gate = lpw.initalSuperpostion(circ,qr)
+    circ.append(initalise_gate,[*qr])
+
+    '''This will get changed once I am handelling real data '''
+    data = gen_bounds(4)
+
+    Xdata =data[0]
+    Ydata=data[1]
+    #Xdata =[1,2,3,4,5,6,7,8,9]
+    #Ydata=[3,5,6,7,8,9,9,10,11]
+    lpw_gate = lpw.LinearPiecewise(circ,qr,anc,coff,lab,target,Xdata,Ydata)
+    circ.append(lpw_gate,[*qr,*anc,*coff,*lab,*target])
+    
+    rotational = ThetaRotation(circ,qr,anc,1)
+    circ.append(rotational,[*qr,*anc])
+
+
+    circ.measure(anc,cla_reg)
+    shots = 100
+    backend= qt.Aer.get_backend("aer_simulator")
+    tqc = qt.transpile(circ,backend)
+    job = backend.run(tqc,shots=shots)
+    result = job.result()
+    counts = result.get_counts(tqc)
+    print("counts:",counts)
+
+    circ.decompose().draw("mpl")
+    plt.show()
+    
+
+    return circ
 
 if __name__ == "__main__":
     #test = qtool.my_binary_repr(1.25,6,nint=1 )
@@ -215,6 +256,7 @@ if __name__ == "__main__":
     #target = qt.QuantumRegister(size=1,name='tar')
     #classical = qt.ClassicalRegister(size=4,name="cla")
     circ = qt.QuantumCircuit(qr,anc)
+    GR_function(4)
     '''
     result = lpw.inputValue(circ,qr,[0,1,1,1]).to_instruction()
 
@@ -230,10 +272,7 @@ if __name__ == "__main__":
     result = job.result()
     counts = result.get_counts(tqc)
     print("counts:",counts)'''
-    rotational = ThetaRotation(circ,qr,anc,1)
-    circ.append(rotational,[*qr,*anc])
-    circ.decompose().draw("mpl")
-    plt.show()
+
     
     #result = inputValue(circ,qr,[1,0,0,0,0,0])
 
