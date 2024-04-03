@@ -138,9 +138,12 @@ def my_binary_repr(digit, n, nint=None, phase=False, nround=True, overflow_error
     """
     Convert a floating point digit to binary string
     in the format of twos complement
-    digit - input number (float)
-    n - total number of bits (int)
-    nint - number of integer bits. Default to lowest required (int)
+    Args:
+    digit: input number (float)
+    n: total number of bits (int)
+    nint: number of integer bits. Default to lowest required (int)
+    phase: handle negative numbers
+    Return:
     """
 
     if nint is None:# or nint==n:

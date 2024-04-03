@@ -68,6 +68,7 @@ def cos2_theta(m,j,n,distribution):
 
 def Q_operator(m,j,theta,circ,qr,n):
     '''
+    This got replaced by the Linear Piece wise function
     Args:
     m = level
     j = bin
@@ -210,7 +211,9 @@ def GR_function(n):
     cla_reg =qt.ClassicalRegister(size=9,name="cla")
     circ = qt.QuantumCircuit(qr,target,anc,lab,coff,cla_reg)
 
-    '''Currently this GR will only work for 1 qubit we still need to iterate though it '''
+    '''Currently this GR will only work for 1 qubit we still need to iterate though it
+    Figure out how this works in terms of where the rotations occur, am i looping though it n amount of times in qr
+     or for 2**n times. e.g at 3 qubits is it 3 or 8 '''
     #Currently replacing the GR Small function at some point we will only apply this to 
     #bits after m<5 or whatever we decide to do
     initalise_gate = lpw.initalSuperpostion(circ,qr)

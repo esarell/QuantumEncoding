@@ -148,19 +148,21 @@ def load_coefficents(circ, qlab, qcoff, coeffs_in, nint=None, phase=False, wrap=
 
     #Loops though the coefficents
     for i in np.arange(len(coeffs_in)):
-        #converts index to binary
+        #converts index to binary almost
         print("label i:",i)
-        
-        control_bits = qtool.my_binary_repr(i, nlab, nint=4, phase=True)
+        ##QE ERROR unsure why this is only three bits
+        control_bits = qtool.my_binary_repr(i, nlab, nint=5, phase=False)
         print("i:",i)
-        print(control_bits)
+        print("control_bits:",control_bits)
         #if greater than one takes the previous number and does in the binary but splitting the highest and lowest order
+        print("i-1:",i-1)
         if i>0:
-            prev_control = qtool.my_binary_repr(i-1, nlab, nint=4, phase=True)[::-1]
+            #QE ERROR
+            prev_control = qtool.my_binary_repr(i-1, nlab, nint=5, phase=True)[::-1]
         else:
             #if eq or less than zero then sets it all to zero
             prev_control = np.ones(nlab).astype(int).astype(str)
-        
+        print("prev_control:",prev_control)
         #Compares the current control bit with the previous controll bit
         for j,control_bit in enumerate(control_bits[::-1]):
             #Why? flip the bit if its an 1 and the previous was a zero
