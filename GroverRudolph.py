@@ -119,7 +119,9 @@ def xGateAdd(m,pattern,qc,qr,theta_array,n):
         else:
             pattern.extend(temparray)
             qc.x(qr[n-m:n])
-            theta = theta=theta_array[m][0]
+            print(theta_array)
+            print(theta_array[m][0])
+            theta=theta_array[m][0]
             gate = RYGate(2*theta).control(m)
             qc.append(gate,[*qr[n-m-1:][::-1]])
             for counter,i in enumerate(pattern):
@@ -129,7 +131,7 @@ def xGateAdd(m,pattern,qc,qr,theta_array,n):
                 qc.append(gate,[*qr[n-m-1:][::-1]])
         return(pattern)    
 
-def Grover_Rudolph_func_small(n,distribution,circ,qr):
+def Grover_Rudolph_func_small(n,distribution):
     '''Args: This function is for when m<4
     n: the number of qubits for our circuit
     distribution: is the probability distrbution we are trying to encode
@@ -163,12 +165,14 @@ def Grover_Rudolph_func_small(n,distribution,circ,qr):
             #place=str(i)+str(j)
             #angles[place]= theta
         theta_array.append(temp)
+    print(theta_array)
     xGateAdd(len(m)-1,x_gate_pattern,circ,qr,theta_array,n)
     #Draws the quantum circuit
     #qc.draw("mpl")
     #plt.show()
-    circ = circ.to_gate()
-    circ.label = "GSP" 
+    circ.draw("mpl")
+    plt.show()
+
 
 def ThetaRotation(circ,qr,anc,bit,wrap =True):
     '''Args:
@@ -197,23 +201,31 @@ def ThetaRotation(circ,qr,anc,bit,wrap =True):
 
     return circ
     
-def GR_Const_Theta(n,k,theta):
+def GR_Const_Theta(n,k,theta_array):
     """This is the code which first does general state preparation
     Then after a point k, we do fixed theta values
     Args: n: number of qubits
     k: when you flip systems
     theta: a list of theta values
     Returns: an encoded quantum circuit"""
+    fixed_theta=[0.12,0.23,0.4,0.1,0.32,0.64]
     qr= qt.QuantumRegister(n,'q')
-    circ = qt.QuantumCircuit(qr)
-    circ.append(Grover_Rudolph_func_small(k-1,[0,1,2,3,4,5,6,7,8,10],circ,qr),[qr[0:k-1]])
-
-    start = 2**k -1
-    for i in range(n-k):
-        rotation_gate = RYGate(theta[start+i])
-        circ.append(rotation_gate,[qr[k+i]])
+    lab=qt.QuantumRegister(1,"L")
+    # We then will add 6 bits for the ancillary register 
+    #anc = qt.QuantumRegister(6,'ancilla')
+    circ = qt.QuantumCircuit(qr,lab)
+    #Loop through each level of m
+    x_gate_pattern =[]    
+    xGateAdd(k,x_gate_pattern,circ,qr,theta_array,n)
+    amount = n-k-1
+    for i in range(amount):
+        #Add label gate
+        rotation_gate = RYGate(fixed_theta[i]).control(1)
+        circ.append(rotation_gate,[lab[0],qr[amount-i-1]])
+        rotation_gate = RYGate(fixed_theta[i]).control(1,ctrl_state="0")
+        circ.append(rotation_gate,[lab[0],qr[amount-i-1]])
     
-    circ.decompose().draw("mpl")
+    circ.draw("mpl")
     plt.show()
 
 
@@ -308,9 +320,9 @@ if __name__ == "__main__":
     #lab = qt.QuantumRegister(size=3,name='lab')
     #target = qt.QuantumRegister(size=1,name='tar')
     #classical = qt.ClassicalRegister(size=4,name="cla")
-    #circ = qt.QuantumCircuit(qr,anc)
+    #circ = qt.QuantumCircuit(qr,anc)x
     #GR_function(4)
-    GR_Const_Theta(9,6,[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34])
+    GR_Const_Theta(9,3,[[0.01],[0.1,0.2],[0.3,0.4,0.5,0.6],[0.07,0.8,0.9,0.10,0.11,0.12,0.13,0.14]])
     '''
     result = lpw.inputValue(circ,qr,[0,1,1,1]).to_instruction()
 
