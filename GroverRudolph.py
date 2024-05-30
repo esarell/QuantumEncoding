@@ -129,10 +129,12 @@ def xGateAdd(m,pattern,qc,qr,theta_array,n):
                 qc.append(gate,[*qr[n-m-1:][::-1]])
         return(pattern)    
 
-def Grover_Rudolph_func_small(n,distribution):
+def Grover_Rudolph_func_small(n,distribution,circ,qr):
     '''Args: This function is for when m<4
     n: the number of qubits for our circuit
     distribution: is the probability distrbution we are trying to encode
+    circ:
+    qr:
     Returns: an encoded quantum circuit '''
     #Define how many levels we want to have
     m = list(range(0, n-1))
@@ -141,8 +143,8 @@ def Grover_Rudolph_func_small(n,distribution):
     # our probability distribution will be put on n qubits
     qr= qt.QuantumRegister(n,'q')
     # We then will add 6 bits for the ancillary register 
-    anc = qt.QuantumRegister(6,'ancilla')
-    qc = qt.QuantumCircuit(qr,anc)
+    #anc = qt.QuantumRegister(6,'ancilla')
+    circ = qt.QuantumCircuit(qr)
     theta_array =[]
     #Loop through each level of m
     x_gate_pattern =[]    
@@ -161,10 +163,12 @@ def Grover_Rudolph_func_small(n,distribution):
             #place=str(i)+str(j)
             #angles[place]= theta
         theta_array.append(temp)
-    xGateAdd(len(m)-1,x_gate_pattern,qc,qr,theta_array,n)
+    xGateAdd(len(m)-1,x_gate_pattern,circ,qr,theta_array,n)
     #Draws the quantum circuit
-    qc.draw("mpl")
-    plt.show()
+    #qc.draw("mpl")
+    #plt.show()
+    circ = circ.to_gate()
+    circ.label = "GSP" 
 
 def ThetaRotation(circ,qr,anc,bit,wrap =True):
     '''Args:
@@ -193,6 +197,24 @@ def ThetaRotation(circ,qr,anc,bit,wrap =True):
 
     return circ
     
+def GR_Const_Theta(n,k,theta):
+    """This is the code which first does general state preparation
+    Then after a point k, we do fixed theta values
+    Args: n: number of qubits
+    k: when you flip systems
+    theta: a list of theta values
+    Returns: an encoded quantum circuit"""
+    qr= qt.QuantumRegister(n,'q')
+    circ = qt.QuantumCircuit(qr)
+    circ.append(Grover_Rudolph_func_small(k-1,[0,1,2,3,4,5,6,7,8,10],circ,qr),[qr[0:k-1]])
+
+    start = 2**k -1
+    for i in range(n-k):
+        rotation_gate = RYGate(theta[start+i])
+        circ.append(rotation_gate,[qr[k+i]])
+    
+    circ.decompose().draw("mpl")
+    plt.show()
 
 
 def GR_function(n):
@@ -218,16 +240,44 @@ def GR_function(n):
     #bits after m<5 or whatever we decide to do
     initalise_gate = lpw.initalSuperpostion(circ,qr)
     circ.append(initalise_gate,[*qr])
+    
+    circ.decompose().draw("mpl")
+    plt.show()
 
     '''This will get changed once I am handelling real data '''
     data = gen_bounds(4)
-
+    print(len(data))
     Xdata =data[0]
     Ydata=data[1]
     #Xdata =[1,2,3,4,5,6,7,8,9]
     #Ydata=[3,5,6,7,8,9,9,10,11]
+    data = gen_bounds(4)
+    print(len(data[0]))
+    
+    index=[]
+    for i in range(4):
+        points = (2**i)+1
+        #Calculate which datapoints we will need
+        if i==0:
+            index.append(0)
+            index.append(len(data[0])-1)
+        else:
+            temp =[]
+            for place,point in enumerate(index):
+                print(point)
+                try:
+                    half =  int((point+index[place+1])/2)
+                    temp.append(point)
+                    temp.append(half)
+                except:
+                    temp.append(point)
+            index=temp
+        print(index)
+
+        print(points)
+    print(data[0][16])
     lpw_gate = lpw.LinearPiecewise(circ,qr,anc,coff,lab,target,Xdata,Ydata)
-    circ.append(lpw_gate,[*qr,*anc,*coff,*lab,*target])
+    circ.append(lpw_gate,[*qr[0],*anc,*coff,*lab,*target])
     
     rotational = ThetaRotation(circ,qr,anc,1)
     circ.append(rotational,[*qr,*anc])
@@ -251,15 +301,16 @@ def GR_function(n):
 if __name__ == "__main__":
     #test = qtool.my_binary_repr(1.25,6,nint=1 )
     #print(test)
-    #Grover_Rudolph_func_small(6,[0,1,2,3,4,5,6,7,8,10])
-    qr= qt.QuantumRegister(size=4,name='q')
+    #Grover_Rudolph_func_small(4,[0,1,2,3,4,5,6,7,8,10])
+    #qr= qt.QuantumRegister(size=4,name='q')
     # We then will add 6 bits for the ancillary register 
-    anc = qt.QuantumRegister(size=9,name='anc')
+    #anc = qt.QuantumRegister(size=9,name='anc')
     #lab = qt.QuantumRegister(size=3,name='lab')
     #target = qt.QuantumRegister(size=1,name='tar')
     #classical = qt.ClassicalRegister(size=4,name="cla")
-    circ = qt.QuantumCircuit(qr,anc)
-    GR_function(4)
+    #circ = qt.QuantumCircuit(qr,anc)
+    #GR_function(4)
+    GR_Const_Theta(9,6,[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34])
     '''
     result = lpw.inputValue(circ,qr,[0,1,1,1]).to_instruction()
 

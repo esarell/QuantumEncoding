@@ -151,6 +151,7 @@ def load_coefficents(circ, qlab, qcoff, coeffs_in, nint=None, phase=False, wrap=
         #converts index to binary almost
         print("label i:",i)
         ##QE ERROR unsure why this is only three bits
+        #This is done to keep track of which label we should be assigning each 
         control_bits = qtool.my_binary_repr(i, nlab, nint=5, phase=False)
         print("i:",i)
         print("control_bits:",control_bits)

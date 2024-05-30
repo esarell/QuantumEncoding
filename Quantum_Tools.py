@@ -313,7 +313,7 @@ def integer_compare(circ, qreg, qtarg, qans ,value, geq=True, wrap=True, inverse
     else:
         if not geq:
             circ.x(qtarg);
-
+    
     if wrap:
         circ = circ.to_gate()
         circ.label = label
@@ -322,7 +322,7 @@ def integer_compare(circ, qreg, qtarg, qans ,value, geq=True, wrap=True, inverse
     if inverse:
         circ = circ.inverse()
         circ.label = label+'†'
-
+    
     return circ
 
 def QFTMultiply(circ, qreg1, qreg2, qreg3, A=1., wrap=False, inverse=False, nint1=None, nint2=None, nint3=None, phase=False, label='Mult', QFT_on=True, iQFT_on=True):

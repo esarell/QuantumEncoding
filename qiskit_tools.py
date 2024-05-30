@@ -409,6 +409,8 @@ def QFTSubtraction(circ, qreg1, qreg2, wrap=False, inverse=False, label='Sub', Q
     n1 = qreg1.size
     n2 = qreg2.size
 
+
+
     if inverse:
         wrap = True
 
@@ -1364,13 +1366,13 @@ def label_gate(circ, qreg, qtarg, qans, qlab, bounds=None, wrap=False, nint=None
         circ.append(QFT(circ, qlab, do_swaps=False, wrap=True), qlab)
 
     for i,bound_ in enumerate(bounds):
-
+        #Flips the first bit of our binary representation then converts back to decimal
         binary = my_binary_repr(bound_, n=n, nint=nint, phase=phase)
         if binary[0]=='0':
             binary = '1'+binary[1:]
         elif binary[0]=='1':
             binary = '0'+binary[1:]
-
+        
         bound = bin_to_dec(binary, nint=None, phase=False)
 
         intcomp_gate = integer_compare(circ, qreg, qtarg, qans, bound, geq=True, wrap=True, uncomp=False, label='P'+str(i))
