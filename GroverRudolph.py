@@ -7,6 +7,7 @@ import Quantum_Tools as qtool
 from qiskit.circuit.library.standard_gates import RYGate
 import Linear_Piecewise as lpw
 from GenBounds import gen_bounds
+import math
 
 def prob(qubit,fmin,fdelta,distrbution_type):
     '''
@@ -208,23 +209,26 @@ def GR_Const_Theta(n,k,theta_array):
     k: when you flip systems
     theta: a list of theta values
     Returns: an encoded quantum circuit"""
-    fixed_theta=[0.12,0.23,0.4,0.1,0.32,0.64]
+    fixed_theta=[0.12,0.23,0.4,0.1,0.32,0.64,0.11,0.22]
+    control=["000","001","010","011","100","101","110","111"]
     qr= qt.QuantumRegister(n,'q')
     lab=qt.QuantumRegister(1,"L")
     # We then will add 6 bits for the ancillary register 
-    #anc = qt.QuantumRegister(6,'ancilla')
-    circ = qt.QuantumCircuit(qr,lab)
+    anc = qt.QuantumRegister(n,'ancilla')
+    circ = qt.QuantumCircuit(qr,lab,anc)
     #Loop through each level of m
     x_gate_pattern =[]    
     xGateAdd(k,x_gate_pattern,circ,qr,theta_array,n)
+
     amount = n-k-1
-    for i in range(amount):
-        #Add label gate
-        rotation_gate = RYGate(fixed_theta[i]).control(1)
-        circ.append(rotation_gate,[lab[0],qr[amount-i-1]])
-        rotation_gate = RYGate(fixed_theta[i]).control(1,ctrl_state="0")
-        circ.append(rotation_gate,[lab[0],qr[amount-i-1]])
+    #rotation_gate = RYGate(0.3).control(3,ctrl_state="110")
+    #circ.append(rotation_gate,[*qr[6:9],qr[4]])
     
+    for i in range(amount):
+       for n,value in enumerate(fixed_theta):
+            rotation_gate = RYGate(value).control(3,ctrl_state=control[n])
+            circ.append(rotation_gate,[*qr[6:9],qr[4-i]])
+
     circ.draw("mpl")
     plt.show()
 
