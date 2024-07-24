@@ -1,13 +1,9 @@
 name: QuantumEncoding
 
-on: 
-  push:
-    paths:
-        - 'GroverRudolph_LPW/**'
+on: [push]
 
 jobs:
-  build:
-
+  job_1:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -20,6 +16,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
       - name: Running Grover-Rudolph Algorithm
+        working-directory: ./GroverRudolph_LPW
         run: | 
           python -m GroverRudolph
       - name: Running Linear-Piecewise Function
@@ -28,3 +25,24 @@ jobs:
       - name: Testing
         run: |
           python -m TestGR
+  job_2:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Running Fixed Rotation For Inspiral
+        run: | 
+          python -m inspiral_cal_k
+      - name: Running Fixed Rotation For Wholw Waveform
+        run: | 
+          python -m waveform_fixed_rotation_cal
+
+      
+
