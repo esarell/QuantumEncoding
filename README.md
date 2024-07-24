@@ -25,3 +25,17 @@ contains all the functions for the linear piecewise function, including the labe
 is a modifided version of the jyupter notebook provided by Ashwin, it generates the data points using the function and the second derivative. It uses the amount of qubits we have to decide how many bounds we should have
 
 ### GroverRudolph.py
+
+# Quantum Encoding Using Fixed Rotational Gates
+We use the ideas from this paper: 
+https://link.aps.org/doi/10.1103/PhysRevResearch.5.033114 
+
+Idea is to used the fixed rotations but have some conditions on previous qubits
+
+## waveform_fixed_rotation_cal.py
+This code performs the second devirative of the log of the function squared. 
+For the whole waveform this is done numerically done using points which are generated in GW_Info/LinearSpineApprox.py
+Once this eta value is calculated we determine the value of K which tells us the level at which we switch to a fixed rotational gate
+
+## inspiral_cal_k.py
+This also perfroms the second devirative of the log of the function squared but this is just for the inspiral of the waveform and so does it analytically. 
