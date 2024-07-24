@@ -3,7 +3,7 @@ name: QuantumEncoding
 on: [push]
 
 jobs:
-  job_1:
+  GroverRudolph:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -27,7 +27,7 @@ jobs:
         working-directory: ./GroverRudolph_LPW
         run: |
           python -m TestGR
-  job_2:
+  FixedRotations:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
