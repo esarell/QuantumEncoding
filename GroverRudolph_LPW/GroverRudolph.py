@@ -3,9 +3,9 @@ It should take a probabiltiy distribution and encoded it into a quantum state of
 import qiskit as qt
 import matplotlib.pyplot as plt
 import numpy as np
-import Quantum_Tools as qtool
+import GroverRudolph_LPW.Quantum_Tools as qtool
 from qiskit.circuit.library.standard_gates import RYGate
-import Linear_Piecewise as lpw
+import GroverRudolph_LPW.Linear_Piecewise as lpw
 from GenBounds import gen_bounds
 import math
 
@@ -221,13 +221,16 @@ def GR_Const_Theta(n,k,theta_array):
     xGateAdd(k,x_gate_pattern,circ,qr,theta_array,n)
 
     amount = n-k-1
+    print("amount:",amount)
     #rotation_gate = RYGate(0.3).control(3,ctrl_state="110")
     #circ.append(rotation_gate,[*qr[6:9],qr[4]])
     
+    #Adds the fixed theta rotation this if for 3 controls
+    #So this is for 8 theta values per each level
     for i in range(amount):
        for n,value in enumerate(fixed_theta):
             rotation_gate = RYGate(value).control(3,ctrl_state=control[n])
-            circ.append(rotation_gate,[*qr[6:9],qr[4-i]])
+            circ.append(rotation_gate,[*qr[6:9],qr[amount-1-i]])
 
     circ.draw("mpl")
     plt.show()
@@ -326,7 +329,7 @@ if __name__ == "__main__":
     #classical = qt.ClassicalRegister(size=4,name="cla")
     #circ = qt.QuantumCircuit(qr,anc)x
     #GR_function(4)
-    GR_Const_Theta(9,3,[[0.01],[0.1,0.2],[0.3,0.4,0.5,0.6],[0.07,0.8,0.9,0.10,0.11,0.12,0.13,0.14]])
+    GR_Const_Theta(9,5,[[0.01],[0.1,0.2],[0.3,0.4,0.5,0.6],[0.07,0.8,0.9,0.10,0.11,0.12,0.13,0.14],[0.15,0.16,0.17,0.18,0.19,0.20,0.21,0.22,0.23,0.24,0.25,0.26,0.27,0.28,0.29,0.30,0.31],[0.32,0.33,0.34,0.35,0.36,0.37,0.38,0.39,0.40,0.41,0.42,0.43,0.44,0.45,0.46,0.47,0.48,0.49,0.50,0.51,0.52,0.53,0.54,0.55,0.56,0.57,0.58,0.59,0.60,0.61,0.62,0.63]])
     '''
     result = lpw.inputValue(circ,qr,[0,1,1,1]).to_instruction()
 

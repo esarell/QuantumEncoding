@@ -355,5 +355,5 @@ if __name__ == "__main__":
     counts = result.get_counts(tqc)
     print("counts:",counts)
 
-    circ.decompose().draw("mpl")
+    circ.decompose().decompose().draw("mpl")
     plt.show()
