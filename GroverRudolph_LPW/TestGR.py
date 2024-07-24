@@ -1,5 +1,5 @@
 import ProbabilityDistribution as PD
-import GroverRudolph as GR
+import GroverRudolph_LPW.GroverRudolph as GR
 
 def TestSimpleDistribution():
     '''
