@@ -12,7 +12,7 @@ def g2(x): #This is the second derivative of g(x)
 def gen_bounds(n): 
     '''Generates the bounds depended on how many qubits n we have
     args: n: number of qubits
-    returns: '''
+    returns: data: a two dimensional array first bit contains an array with all the x values, second bit is all the y values '''
     k = 4.5e-3  # n = 4
     #k = 1.7e-3  # n = 5
     #k = 0.48e-3 # n = 6 
