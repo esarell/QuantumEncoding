@@ -1,6 +1,9 @@
 name: QuantumEncoding
 
-on: [push]
+on: 
+  push:
+    paths:
+        - 'GroverRudolph_LPW/**'
 
 jobs:
   build:
@@ -18,7 +21,7 @@ jobs:
           pip install -r requirements.txt
       - name: Running Grover-Rudolph Algorithm
         run: | 
-          python -m GroverRudolph_LPW/GroverRudolph
+          python -m GroverRudolph
       - name: Running Linear-Piecewise Function
         run: | 
           python -m Linear_Piecewise
