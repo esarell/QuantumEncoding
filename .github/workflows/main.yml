@@ -20,9 +20,11 @@ jobs:
         run: | 
           python -m GroverRudolph
       - name: Running Linear-Piecewise Function
+        working-directory: ./GroverRudolph_LPW
         run: | 
           python -m Linear_Piecewise
       - name: Testing
+        working-directory: ./GroverRudolph_LPW
         run: |
           python -m TestGR
   job_2:
@@ -38,9 +40,11 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
       - name: Running Fixed Rotation For Inspiral
+        working-directory: ./Fixed_Roations_GSP
         run: | 
           python -m inspiral_cal_k
-      - name: Running Fixed Rotation For Wholw Waveform
+      - name: Running Fixed Rotation For Whole Waveform
+        working-directory: ./Fixed_Roations_GSP
         run: | 
           python -m waveform_fixed_rotation_cal
 

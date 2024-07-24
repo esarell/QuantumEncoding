@@ -3,9 +3,9 @@ It should take a probabiltiy distribution and encoded it into a quantum state of
 import qiskit as qt
 import matplotlib.pyplot as plt
 import numpy as np
-import GroverRudolph_LPW.Quantum_Tools as qtool
+import Quantum_Tools as qtool
 from qiskit.circuit.library.standard_gates import RYGate
-import GroverRudolph_LPW.Linear_Piecewise as lpw
+import Linear_Piecewise as lpw
 from GenBounds import gen_bounds
 import math
 
