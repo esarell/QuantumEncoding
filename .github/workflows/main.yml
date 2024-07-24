@@ -18,7 +18,7 @@ jobs:
           pip install -r requirements.txt
       - name: Running Grover-Rudolph Algorithm
         run: | 
-          python -m GroverRudolph
+          python -m GroverRudolph_LPW/GroverRudolph
       - name: Running Linear-Piecewise Function
         run: | 
           python -m Linear_Piecewise
