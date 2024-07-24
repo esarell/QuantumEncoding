@@ -193,7 +193,7 @@ def numerical_2dev_32points():
     print("test 6: 5 Controls")
 
 def numerical_350points():
-    with open("GW_Info/test", "rb") as fp:   # Unpickling
+    with open("datapoints", "rb") as fp:   # Unpickling
         datapoints = pickle.load(fp)
 
     print("\ntest 1 for numerical:no controls")
