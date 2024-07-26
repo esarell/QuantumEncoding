@@ -47,6 +47,10 @@ jobs:
         working-directory: ./Fixed_Roations_GSP
         run: | 
           python -m waveform_fixed_rotation_cal
+      - name: Running Circuit 
+        working-directory: ./Fixed_Roations_GSP
+        run: | 
+          python -m fixed_rotation_circ
 
       
 
