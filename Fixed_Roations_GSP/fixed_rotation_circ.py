@@ -245,6 +245,8 @@ def test(n):
     print(statevector)
 
 def amplitudes_for_theta(f):
+    """Samples the distributions at the given frequency
+    Then normalises them so them squared and summed =1"""
     result =[]
     normalised=[]
     for i in f:
@@ -267,12 +269,14 @@ def amplitudes_7_over_6(f):
     return normalised
 
 def theta(frequency):
-    '''Generate the thetas when you have already sampled the distribution for amplitudes'''
+    '''
+    Generates thetas for a 
+    Args: frequency: A list of all the frequencys you will be calculating theta for  
+    '''
     m = 3
     j=0
-    #amps =[0.412353145,0.187088451,0.11729922,0.084116773,0.064957942,0.052576993,0.043962095,0.037645382]
-    #amps=[0.7198604709104504, 0.14818480063441608, 0.05825053929759997, 0.029955385427062213, 0.0178638150116292, 0.011703107482884147, 0.008182131540445838, 0.005999749695512081]
-    #amps=[0.848445915135697, 0.384947789491531, 0.2413514849707786, 0.1730762416597443, 0.13365558354079038, 0.10818090165497858, 0.09045513551173222, 0.0774580511987752]
+    #This is specifically for f^-7/6 (so p(i)is f^-7/3)
+    #Will need changing for a more complicatated distribution
     amps= amplitudes_for_theta(frequency)
     thetas=[]
     for i in range(m):
@@ -296,76 +300,6 @@ def theta(frequency):
             thetas.append(theta*2)
             start_f= start_f+(size*2)
     return thetas
-
-def intergrate_f(x):
-    pow_x = pow(x, 4/3)
-    return (-3/(4*pow_x))
-
-def genTheata(f):
-    '''This is generating thetas for numerical distributions
-    done by intergrating the function'''
-    t = np.array([])
-    for i in range(0,len(f)-1):
-        f_int = (f[i+1] + f[i])/2
-
-
-        area_num = (intergrate_f(f_int) - intergrate_f(f[i]))
-        area_den = (intergrate_f(f[i+1]) - intergrate_f(f[i]))
-        
-        
-        costheta2 = area_num/area_den
-        costheta = np.sqrt(costheta2)
-        theta = np.arccos(costheta)
-        t = np.append(t,theta)
-    return(t)
-def xGateAdd(m,pattern,qc,qr,theta_array,n):
-    '''Adds the X gates and the Rcy Gates for small values of m
-        This is a recursive function
-    Args:
-    m the max level for the Grover Rudolph Algorithm
-    pattern: a blank list which will be populated with the pattern of the X gates
-    qc: quantum circuit
-    qr: quantum register this is being added to
-    theta_array: a 2 dimensional array containing the values for the Rcy gate
-    n: the number of qubits for the qr register
-    Returns:
-    patterns: A list of the X-gate pattern
-     '''
-    if m == 0:
-        theta = theta_array[0][0]
-        qc.ry(2*theta,qr[n-1])
-        return []
-    else:
-        x = m -1
-        pattern = xGateAdd(x,pattern,qc,qr,theta_array,n)
-        temparray = pattern.copy()
-        pattern.append(m)
-        if m ==1:
-            qc.x(n-1)
-            theta=theta_array[m][0]
-            gate = RYGate(2*theta).control(m)
-            qc.append(gate,[n-1,n-2])
-            qc.x(n-1)
-            theta=theta_array[m][1]
-            gate = RYGate(2*theta).control(m)
-            qc.append(gate,[n-1,n-2])
-            return(pattern)
-        else:
-            pattern.extend(temparray)
-            qc.x(qr[n-m:n])
-            print(theta_array)
-            print(theta_array[m][0])
-            theta=theta_array[m][0]
-            gate = RYGate(2*theta).control(m)
-            qc.append(gate,[*qr[n-m-1:][::-1]])
-            for counter,i in enumerate(pattern):
-                theta=theta_array[m][counter+1]
-                qc.x(qr[n-i:n])
-                gate = RYGate(2*theta).control(m)
-                qc.append(gate,[*qr[n-m-1:][::-1]])
-        return(pattern)    
-
-
 
 if __name__ == "__main__":
     '''with open('test.csv', newline='') as f:
