@@ -97,7 +97,7 @@ def ThetaRotation(circ,qr,condition,qubit_no,theta,wrap =True):
         print("i",len(i))
         rotation_gate = RYGate(theta[count]).control(len(i),ctrl_state=i)
         #[*qr[num_qubits-i-1:][::-1]
-        circ.append(rotation_gate,[*qr[(8-len(i)+1):],qr[qubit_no]])
+        circ.append(rotation_gate,[*qr[(4-len(i)+1):],qr[qubit_no]])
         #circ.append(rotation_gate,[*qr[9-3:][::-1]])
 
 
@@ -128,6 +128,7 @@ def theta(frequency,m):
     j=0
     #This is specifically for f^-7/6 (so p(i)is f^-7/3)
     #Will need changing for a more complicatated distribution
+    print("freq:",frequency)
     amps= amplitudes_for_theta(frequency)
     thetas=[]
     gsp_theta=[]
@@ -155,17 +156,17 @@ def theta(frequency,m):
         else:
             #print("m:",i)
             if i==3:
-                controls =["000","100","010","110","01","11"]
                 thetas.append(gsp_theta)
                 '''Starting points frequency: 40,78.75,117,156.25,195,272.5'''
                 #index=[0,2,4,6,8,12]
-                index=[0,64,128,192,256,384]
+                #index=[0,64,128,192,256,384]
+                index=[0,4,8,12,16,24]
             else:
-                controls =["0000","1000","100","10","01","11"]
                 '''Set starting points for all the
                 40, 59.375, 78.75, 117.5, 195, 272.5
                 0,32,64,128,256,384'''
-                index=[0,32,64,128,256,384]
+                #index=[0,32,64,128,256,384]
+                index=[0,2,4,8,16,24]
             temp_theta =[]
             for current_index in index:
                 temp_start=current_index
@@ -200,6 +201,19 @@ def amplitudes_7_over_6(f):
         normalised.append(norm)
     return normalised
 
+def Fidelity(expected_amps,measured_amps):
+    '''
+    Args: 
+    '''
+    current =0
+    for count,i in enumerate(expected_amps):
+        current = current+(i*measured_amps[count])
+    
+    fidelity = current*current
+    return fidelity
+
+
+
 def Inspiral_Fixed_Rots(n):
     """Create a circuit for the inspiral f^-7/6
     Args: n: number of qubits
@@ -219,13 +233,13 @@ def Inspiral_Fixed_Rots(n):
     #This is for m=3
     controls =["000","001","010","011","10","11"]
     #theta_m3 =[0.59220374,0.67082012,0.70137334,0.720939,0.73261907,0.74665287]
-    m_3=ThetaRotation(circ,qr,controls,5,thetas[1],True)
+    m_3=ThetaRotation(circ,qr,controls,1,thetas[1],True)
     circ.append(m_3,[*qr])
     #for the rest of the levels m>3
     for i in range((n-4)):
         controls =["0000","0001","001","01","10","11"]
         #thetas=[[0.67107712,0.70335526,0.72139602,0.74093268,0.75778171,0.76536915],[0.72229088,0.7413661,0.75127389,0.76229837,0.7712584,0.77520995],[0.75208093,0.76253209,0.76820956,0.77361685,0.77824197,0.78025934],[0.76825558,0.77373839,0.77667612,0.77944766,0.78179804,0.7828174],[0.77669981,0.77950966,0.78100439,0.7824077,0.78359254,0.78410493]]
-        fixed=ThetaRotation(circ,qr,controls,8-(4+i),thetas[i+2],True)
+        fixed=ThetaRotation(circ,qr,controls,4-(4+i),thetas[i+2],True)
         circ.append(fixed,[*qr])
     circ.decompose().draw("mpl",fold=-1)
     circ.save_statevector()
@@ -246,6 +260,7 @@ def Inspiral_Fixed_Rots(n):
     plt.plot(frequency,amps_7_6,color='b',label='Amps -7/6')
     plt.legend()
     plt.show()
+    print("Fidelity: ",Fidelity(amps_7_6,np.sqrt(state_vector.probabilities())))
 
 
 def Waveform_Fixed_Rots(n):
@@ -359,7 +374,7 @@ if __name__ == "__main__":
     for i in data[0]:
         values.append(float(i))
     Normalise(values)'''
-    Inspiral_Fixed_Rots(9)
+    Inspiral_Fixed_Rots(5)
     #Waveform_Fixed_Rots(9)
     #test(5)
     #thetas = theta()
