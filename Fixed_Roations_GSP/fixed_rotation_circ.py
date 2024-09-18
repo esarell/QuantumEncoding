@@ -97,7 +97,7 @@ def ThetaRotation(circ,qr,condition,qubit_no,theta,wrap =True):
         print("i",len(i))
         rotation_gate = RYGate(theta[count]).control(len(i),ctrl_state=i)
         #[*qr[num_qubits-i-1:][::-1]
-        circ.append(rotation_gate,[*qr[(4-len(i)+1):],qr[qubit_no]])
+        circ.append(rotation_gate,[*qr[(8-len(i)+1):],qr[qubit_no]])
         #circ.append(rotation_gate,[*qr[9-3:][::-1]])
 
 
@@ -159,18 +159,18 @@ def theta(frequency,m):
                 thetas.append(gsp_theta)
                 '''Starting points frequency: 40,78.75,117,156.25,195,272.5'''
                 #index=[0,2,4,6,8,12]
-                #index=[0,64,128,192,256,384]
-                index=[0,4,8,12,16,24]
+                index=[0,64,128,192,256,384]
+                #index=[0,4,8,12,16,24]
             else:
                 '''Set starting points for all the
                 40, 59.375, 78.75, 117.5, 195, 272.5
                 0,32,64,128,256,384'''
-                #index=[0,32,64,128,256,384]
-                index=[0,2,4,8,16,24]
+                index=[0,32,64,128,256,384]
+                #index=[0,2,4,8,16,24]
             temp_theta =[]
             for current_index in index:
                 temp_start=current_index
-                #print("start:",temp_start)
+                print("start:",frequency[temp_start])
                 increment = int(pow(2,m)/pow(2,i))
                 mid =int(temp_start+increment)
                 end=int(temp_start+increment*2)
@@ -233,13 +233,13 @@ def Inspiral_Fixed_Rots(n):
     #This is for m=3
     controls =["000","001","010","011","10","11"]
     #theta_m3 =[0.59220374,0.67082012,0.70137334,0.720939,0.73261907,0.74665287]
-    m_3=ThetaRotation(circ,qr,controls,1,thetas[1],True)
+    m_3=ThetaRotation(circ,qr,controls,5,thetas[1],True)
     circ.append(m_3,[*qr])
     #for the rest of the levels m>3
     for i in range((n-4)):
         controls =["0000","0001","001","01","10","11"]
         #thetas=[[0.67107712,0.70335526,0.72139602,0.74093268,0.75778171,0.76536915],[0.72229088,0.7413661,0.75127389,0.76229837,0.7712584,0.77520995],[0.75208093,0.76253209,0.76820956,0.77361685,0.77824197,0.78025934],[0.76825558,0.77373839,0.77667612,0.77944766,0.78179804,0.7828174],[0.77669981,0.77950966,0.78100439,0.7824077,0.78359254,0.78410493]]
-        fixed=ThetaRotation(circ,qr,controls,4-(4+i),thetas[i+2],True)
+        fixed=ThetaRotation(circ,qr,controls,8-(4+i),thetas[i+2],True)
         circ.append(fixed,[*qr])
     circ.decompose().draw("mpl",fold=-1)
     circ.save_statevector()
@@ -293,7 +293,7 @@ def Waveform_Fixed_Rots(n):
     controls =["000","100","10","01","11"]
     #theta_m3=[0.72251893,0.74890938,0.75837712,0.70859427,0.66545498]
     theta_m3 = [0.72434959,0.74059692,0.75007482,0.76163211,0.76743471] 
-    m_3=ThetaRotation(circ,qr,controls,3,theta_m3,True)
+    m_3=ThetaRotation(circ,qr,controls,5,theta_m3,True)
     circ.append(m_3,[*qr])
     #for the rest of the levels m>3
     circ.save_statevector(label='v2')
@@ -302,7 +302,7 @@ def Waveform_Fixed_Rots(n):
         controls =["0000","1000","100","10","01","11"]
         #theta_m4=[0.73581314,0.74934639,0.74890938,0.75837712,0.70859427,0.66545498]
         theta_m4=[[0.74066914,0.75075189,0.75726406,0.76502399,0.77230382,0.77575838],[0.75760343,0.76520445,0.76942786,0.77434713,0.77851473,0.78040074],[0.76978013,0.77445391,0.77707962,0.77963685,0.78186772,0.78285331],[0.77710115,0.77969497,0.78110797,0.78245585,0.78361015,0.78411397],[0.78111943,0.78248617,0.78321923,0.77277432,0.78449838,0.7847531]]
-        fixed=ThetaRotation(circ,qr,controls,(4+i),theta_m4[i],True)
+        fixed=ThetaRotation(circ,qr,controls,8-(4+i),theta_m4[i],True)
         circ.append(fixed,[*qr])
     circ.save_statevector(label='v3')
     #circ.save_statevector()    
@@ -374,7 +374,7 @@ if __name__ == "__main__":
     for i in data[0]:
         values.append(float(i))
     Normalise(values)'''
-    Inspiral_Fixed_Rots(5)
+    Inspiral_Fixed_Rots(9)
     #Waveform_Fixed_Rots(9)
     #test(5)
     #thetas = theta()
