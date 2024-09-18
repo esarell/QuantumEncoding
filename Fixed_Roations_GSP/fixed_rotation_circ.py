@@ -153,12 +153,12 @@ def theta(frequency,m):
                 theta = np.arccos(costheta) 
                 #print("theta:",theta)
                 gsp_theta.append(theta*2)
-        else:
+        elif i>=3:
             #print("m:",i)
             if i==3:
                 thetas.append(gsp_theta)
                 '''Starting points frequency: 40,78.75,117,156.25,195,272.5'''
-                #index=[0,2,4,6,8,12]
+                #index=[0,2,4,6,8,10,12,14]
                 index=[0,64,128,192,256,384]
                 #index=[0,4,8,12,16,24]
             else:
@@ -171,18 +171,20 @@ def theta(frequency,m):
             for current_index in index:
                 temp_start=current_index
                 print("start:",frequency[temp_start])
+                place = current_index/pow(2,m-i)
+                print("x:",place)
                 increment = int(pow(2,m)/pow(2,i))
-                mid =int(temp_start+increment)
-                end=int(temp_start+increment*2)
-                #print("increment:",increment)
-                #print("mid",mid)
-                #print("end:",end)
+                mid =int((place+0.5)*pow(2,m-i))
+                end=int((place+1)*pow(2,m-i))
+                print("increment:",increment)
+                print("mid",mid)
+                print("end:",end)
                 upper = sum(amps[current_index:mid])
                 lesser =sum(amps[current_index:end])
                 costheta2 = upper/lesser
                 costheta = np.sqrt(costheta2)
                 theta = np.arccos(costheta) 
-                #print("theta:",theta)
+                print("theta:",theta)
                 temp_theta.append(theta*2)
             thetas.append(temp_theta)
     if i<3:
@@ -261,7 +263,7 @@ def Inspiral_Fixed_Rots(n):
     plt.legend()
     plt.show()
     print("Fidelity: ",Fidelity(amps_7_6,np.sqrt(state_vector.probabilities())))
-
+    print(dict(circ.decompose().decompose().count_ops()))
 
 def Waveform_Fixed_Rots(n):
     """[0.69120865] 
