@@ -59,7 +59,8 @@ def General_State_Prep(rotations):
     index=1
     num_qubits=len(rotations).bit_length()
     #builds blank circuit
-    circuit = qt.QuantumCircuit(num_qubits)
+    qr =qt.QuantumRegister(num_qubits,"qr")
+    circuit = qt.QuantumCircuit(qr)
     #first rotation is the first item in rotations so can just be directly placed
     circuit.ry(rotations[0],num_qubits-1)
 
@@ -93,8 +94,11 @@ def ThetaRotation(circ,qr,condition,qubit_no,theta,wrap =True):
     
     for count,i in enumerate(condition):
         start = len(i)
+        print("i",len(i))
         rotation_gate = RYGate(theta[count]).control(len(i),ctrl_state=i)
-        circ.append(rotation_gate,[*qr[0:len(i)],qr[qubit_no]])
+        #[*qr[num_qubits-i-1:][::-1]
+        circ.append(rotation_gate,[*qr[(8-len(i)+1):],qr[qubit_no]])
+        #circ.append(rotation_gate,[*qr[9-3:][::-1]])
 
 
     if wrap ==True:
@@ -103,31 +107,125 @@ def ThetaRotation(circ,qr,condition,qubit_no,theta,wrap =True):
 
     return circ
 
+def amplitudes_for_theta(f):
+    """Samples the distributions at the given frequency
+    Then normalises them so them squared and summed =1"""
+    result =[]
+    normalised=[]
+    for i in f:
+        powered = pow(i,-7/3)
+        result.append(powered)
+    for x in result:
+        norm = np.sqrt(x/sum(result))
+        normalised.append(norm)
+    return normalised
+
+def theta(frequency,m):
+    '''
+    Generates thetas for a list of frequencys
+    Args: frequency: A list of all the frequencys you will be calculating theta for  
+    '''
+    j=0
+    #This is specifically for f^-7/6 (so p(i)is f^-7/3)
+    #Will need changing for a more complicatated distribution
+    amps= amplitudes_for_theta(frequency)
+    thetas=[]
+    gsp_theta=[]
+    for i in range(m):
+        #size = int(0+8/((i+1)*2))
+        start_f =0
+        #print("m:",i)
+        j=pow(2,i)
+        if i<3:
+            for x in range(j):
+                start=int(x*pow(2,m-i))
+                mid = int((x+0.5)*pow(2,m-i))
+                end = int((x+1)*pow(2,m-i))
+                #print("j:",x)
+                #print("start:",start)
+                #print("mid:",(mid))
+                #print("end:",end)
+                upper = sum(amps[start:(mid)])
+                lesser =sum(amps[start:(end)])
+                costheta2 = upper/lesser
+                costheta = np.sqrt(costheta2)
+                theta = np.arccos(costheta) 
+                #print("theta:",theta)
+                gsp_theta.append(theta*2)
+        else:
+            #print("m:",i)
+            if i==3:
+                controls =["000","100","010","110","01","11"]
+                thetas.append(gsp_theta)
+                '''Starting points frequency: 40,78.75,117,156.25,195,272.5'''
+                #index=[0,2,4,6,8,12]
+                index=[0,64,128,192,256,384]
+            else:
+                controls =["0000","1000","100","10","01","11"]
+                '''Set starting points for all the
+                40, 59.375, 78.75, 117.5, 195, 272.5
+                0,32,64,128,256,384'''
+                index=[0,32,64,128,256,384]
+            temp_theta =[]
+            for current_index in index:
+                temp_start=current_index
+                #print("start:",temp_start)
+                increment = int(pow(2,m)/pow(2,i))
+                mid =int(temp_start+increment)
+                end=int(temp_start+increment*2)
+                #print("increment:",increment)
+                #print("mid",mid)
+                #print("end:",end)
+                upper = sum(amps[current_index:mid])
+                lesser =sum(amps[current_index:end])
+                costheta2 = upper/lesser
+                costheta = np.sqrt(costheta2)
+                theta = np.arccos(costheta) 
+                #print("theta:",theta)
+                temp_theta.append(theta*2)
+            thetas.append(temp_theta)
+    if i<3:
+        thetas.append(gsp_theta)
+    #print("theata:",thetas)
+    return thetas
+
+def amplitudes_7_over_6(f):
+    result =[]
+    normalised=[]
+    for i in f:
+        powered = pow(i,-7/6)
+        result.append(powered)
+    for x in result:
+        norm = np.sqrt(x/sum(result))
+        normalised.append(norm)
+    return normalised
 
 def Inspiral_Fixed_Rots(n):
     """Create a circuit for the inspiral f^-7/6
     Args: n: number of qubits
     Returns: Circuit """
-    """My theta values?:
-    [0.26651054,0.37298941,0.61763383,0.48799182,0.63950672,0.6883351,0.71262227] 
-    
-    """
 
     qr= qt.QuantumRegister(size=n,name='q')
     cla_reg =qt.ClassicalRegister(size=n,name="cla")
     circ = qt.QuantumCircuit(qr,cla_reg)
-    basic = General_State_Prep([0.26651054,0.37298941,0.61763383,0.48799182,0.63950672,0.6883351,0.71262227])
-    circ.append(basic,qr[0:3])
+
+    #Generate theta values for the GSP section
+    frequency = np.linspace(40,350,num=pow(2,n),endpoint=False)
+    print(frequency)
+    thetas = theta(frequency,n)
+    #print(thetas)
+    basic = General_State_Prep(thetas[0])
+    circ.append(basic,qr[n-3:n])
     #This is for m=3
-    controls =["000","100","010","110","01","11"]
-    theta_m3 =[0.59220374,0.67082012,0.70137334,0.720939,0.73261907,0.74665287]
-    m_3=ThetaRotation(circ,qr,controls,3,theta_m3,True)
+    controls =["000","001","010","011","10","11"]
+    #theta_m3 =[0.59220374,0.67082012,0.70137334,0.720939,0.73261907,0.74665287]
+    m_3=ThetaRotation(circ,qr,controls,5,thetas[1],True)
     circ.append(m_3,[*qr])
     #for the rest of the levels m>3
     for i in range((n-4)):
-        controls =["0000","1000","100","10","01","11"]
-        thetas=[[0.67107712,0.70335526,0.72139602,0.74093268,0.75778171,0.76536915],[0.72229088,0.7413661,0.75127389,0.76229837,0.7712584,0.77520995],[0.75208093,0.76253209,0.76820956,0.77361685,0.77824197,0.78025934],[0.76825558,0.77373839,0.77667612,0.77944766,0.78179804,0.7828174],[0.77669981,0.77950966,0.78100439,0.7824077,0.78359254,0.78410493]]
-        fixed=ThetaRotation(circ,qr,controls,(4+i),thetas[i],True)
+        controls =["0000","0001","001","01","10","11"]
+        #thetas=[[0.67107712,0.70335526,0.72139602,0.74093268,0.75778171,0.76536915],[0.72229088,0.7413661,0.75127389,0.76229837,0.7712584,0.77520995],[0.75208093,0.76253209,0.76820956,0.77361685,0.77824197,0.78025934],[0.76825558,0.77373839,0.77667612,0.77944766,0.78179804,0.7828174],[0.77669981,0.77950966,0.78100439,0.7824077,0.78359254,0.78410493]]
+        fixed=ThetaRotation(circ,qr,controls,8-(4+i),thetas[i+2],True)
         circ.append(fixed,[*qr])
     circ.decompose().draw("mpl",fold=-1)
     circ.save_statevector()
@@ -138,7 +236,15 @@ def Inspiral_Fixed_Rots(n):
     job = backend.run(tqc,shots=shots)
     result = job.result()
     state_vector = result.get_statevector(tqc)
-    print("statevector:",state_vector)
+    #print("statevector:",state_vector)
+    plt.show()
+
+    amps = amplitudes_for_theta(frequency)
+    amps_7_6 = amplitudes_7_over_6(frequency)
+    plt.plot(frequency,np.sqrt(state_vector.probabilities()),color='k',label='Statevector')
+    plt.plot(frequency,amps,color='r',label='Amps -7/3')
+    plt.plot(frequency,amps_7_6,color='b',label='Amps -7/6')
+    plt.legend()
     plt.show()
 
 
@@ -244,62 +350,6 @@ def test(n):
     plt.show()
     print(statevector)
 
-def amplitudes_for_theta(f):
-    """Samples the distributions at the given frequency
-    Then normalises them so them squared and summed =1"""
-    result =[]
-    normalised=[]
-    for i in f:
-        powered = pow(i,-7/3)
-        result.append(powered)
-    for x in result:
-        norm = np.sqrt(x/sum(result))
-        normalised.append(norm)
-    return normalised
-
-def amplitudes_7_over_6(f):
-    result =[]
-    normalised=[]
-    for i in f:
-        powered = pow(i,-7/6)
-        result.append(powered)
-    for x in result:
-        norm = np.sqrt(x/sum(result))
-        normalised.append(norm)
-    return normalised
-
-def theta(frequency):
-    '''
-    Generates thetas for a 
-    Args: frequency: A list of all the frequencys you will be calculating theta for  
-    '''
-    m = 3
-    j=0
-    #This is specifically for f^-7/6 (so p(i)is f^-7/3)
-    #Will need changing for a more complicatated distribution
-    amps= amplitudes_for_theta(frequency)
-    thetas=[]
-    for i in range(m):
-        size = int(0+8/((i+1)*2))
-        start_f =0
-        print("m:",i)
-        j=pow(2,i)
-        for x in range(j):
-            print("j:",x)
-            print("size:",size)
-            print("start_f:",(start_f))
-            print("start_f+size:",(start_f+size))
-            print("end:",start_f+size*2)
-            upper = sum(amps[start_f:(start_f+size)])
-            lesser =sum(amps[start_f:(start_f+size*2)])
-            costheta2 = upper/lesser
-            costheta = np.sqrt(costheta2)
-            theta = np.arccos(costheta)
-            
-            print("theta:",theta)
-            thetas.append(theta*2)
-            start_f= start_f+(size*2)
-    return thetas
 
 if __name__ == "__main__":
     '''with open('test.csv', newline='') as f:
@@ -309,16 +359,16 @@ if __name__ == "__main__":
     for i in data[0]:
         values.append(float(i))
     Normalise(values)'''
-    #Inspiral_Fixed_Rots(9)
+    Inspiral_Fixed_Rots(9)
     #Waveform_Fixed_Rots(9)
     #test(5)
     #thetas = theta()
     #print(thetas)
-    frequency = [40,78.75,117.5,156.25,195,233.75,272.5,311.25]
-    thetas = theta(frequency)
-    print(thetas)
-    #thetas =[[0.46257475965672856],[0.5253295465140008, 0.6946960790369119],[0.5927731247686209, 0.702648001759369, 0.732631041305686, 0.7466576155044997]]
-    qr= qt.QuantumRegister(size=3,name='q')
+    #frequency = [40,78.75,117.5,156.25,195,233.75,272.5,311.25]
+    '''frequency = np.linspace(40,350,num=512,endpoint=False)
+    print(frequency)
+    thetas = theta(frequency)'''
+    '''qr= qt.QuantumRegister(size=3,name='q')
     circ = qt.QuantumCircuit(qr)
     #basic =General_State_Prep([0.26651054,0.37298941,0.61763383,0.48799182,0.63950672,0.6883351,0.71262227])
     basic =General_State_Prep(thetas)
@@ -335,13 +385,12 @@ if __name__ == "__main__":
     plt.show()
     print("StateVec:",statevector)
     print("probs:",np.sqrt(statevector.probabilities()))
-    amps = amplitudes_for_theta([40,78.75,117.5,156.25,195,233.75,272.5,311.25])
-    amps_7_6 = amplitudes_7_over_6([40,78.75,117.5,156.25,195,233.75,272.5,311.25])
-    print(amps)
-    plt.plot(frequency,np.sqrt(statevector.probabilities()),color='k',label='Statevector')
-    plt.plot(frequency,amps,color='r',label='Amps')
-    plt.plot(frequency,amps_7_6,color='b',label='Amps')
+    amps = amplitudes_for_theta(frequency)
+    amps_7_6 = amplitudes_7_over_6(frequency)
+    #plt.plot(frequency,np.sqrt(statevector.probabilities()),color='k',label='Statevector')
+    plt.plot(frequency,amps,color='r',label='Amps -7/3')
+    plt.plot(frequency,amps_7_6,color='b',label='Amps -7/6')
     plt.legend()
-    plt.show()
-    test=[1,2,3,4]
-    print(sum(test[0:4]))
+    plt.show()'''
+
+    
