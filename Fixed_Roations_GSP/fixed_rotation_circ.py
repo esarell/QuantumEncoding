@@ -97,6 +97,7 @@ def ThetaRotation(circ,qr,condition,qubit_no,theta,wrap =True):
         print("i",len(i))
         rotation_gate = RYGate(theta[count]).control(len(i),ctrl_state=i)
         #[*qr[num_qubits-i-1:][::-1]
+        #The 8 here is currently hard coded for n=9 qubits, this could be easily changed by passing through n as a parameter
         circ.append(rotation_gate,[*qr[(8-len(i)+1):],qr[qubit_no]])
         #circ.append(rotation_gate,[*qr[9-3:][::-1]])
 
@@ -123,42 +124,36 @@ def amplitudes_for_theta(f):
 def theta(frequency,m):
     '''
     Generates thetas for a list of frequencys
-    Args: frequency: A list of all the frequencys you will be calculating theta for  
+    Args: frequency: A list of all the frequencys you will be calculating theta for
+    m: the number of qubits in the circ
     '''
     j=0
     #This is specifically for f^-7/6 (so p(i)is f^-7/3)
     #Will need changing for a more complicatated distribution
-    print("freq:",frequency)
+    #Gets a list of normalised amplitudes for all the frequencies 
     amps= amplitudes_for_theta(frequency)
     thetas=[]
     gsp_theta=[]
     for i in range(m):
-        #size = int(0+8/((i+1)*2))
-        start_f =0
-        #print("m:",i)
         j=pow(2,i)
         if i<3:
             for x in range(j):
                 start=int(x*pow(2,m-i))
                 mid = int((x+0.5)*pow(2,m-i))
                 end = int((x+1)*pow(2,m-i))
-                #print("j:",x)
-                #print("start:",start)
-                #print("mid:",(mid))
-                #print("end:",end)
                 upper = sum(amps[start:(mid)])
                 lesser =sum(amps[start:(end)])
                 costheta2 = upper/lesser
                 costheta = np.sqrt(costheta2)
                 theta = np.arccos(costheta) 
-                #print("theta:",theta)
                 gsp_theta.append(theta*2)
         elif i>=3:
             #print("m:",i)
             if i==3:
                 thetas.append(gsp_theta)
-                '''Starting points frequency: 40,78.75,117,156.25,195,272.5'''
-                #index=[0,2,4,6,8,10,12,14]
+                '''Starting points frequency: 40,78.75,117,156.25,195,272.5
+                #These indexs are hard coded for when n=9 would need to be changed for different points
+                #Also these directly correspond with the set up of the circuit so would also need to be changed if the circuit changes'''
                 index=[0,64,128,192,256,384]
                 #index=[0,4,8,12,16,24]
             else:
@@ -206,6 +201,10 @@ def amplitudes_7_over_6(f):
 def Fidelity(expected_amps,measured_amps):
     '''
     Args: 
+    expected_amps: list of the amplitudes from the discritsed function
+    measured_amps: list of amplitudes taken from the statevector of the quantum circuit
+    Returns:
+    the fidelity (float)
     '''
     current =0
     for count,i in enumerate(expected_amps):
@@ -218,33 +217,40 @@ def Fidelity(expected_amps,measured_amps):
 
 def Inspiral_Fixed_Rots(n):
     """Create a circuit for the inspiral f^-7/6
-    Args: n: number of qubits
-    Returns: Circuit """
+    Args: n: number of qubits """
 
+    #Creates the circuit, quantum register n large
+    #And a classic Register for measuring
     qr= qt.QuantumRegister(size=n,name='q')
     cla_reg =qt.ClassicalRegister(size=n,name="cla")
     circ = qt.QuantumCircuit(qr,cla_reg)
 
     #Generate theta values for the GSP section
+    #A list of frequency values evenly spaced, the amount is based on n
     frequency = np.linspace(40,350,num=pow(2,n),endpoint=False)
-    print(frequency)
+    #Generates a two dimensional array, 0 position will contain all the thetas for GSP
+    #The following positions will containing the theatas for each level up to n-1
     thetas = theta(frequency,n)
-    #print(thetas)
+
+    #Does the basic GSP algorithm for the first 3 levels
+    #m=0 ->m=2
     basic = General_State_Prep(thetas[0])
     circ.append(basic,qr[n-3:n])
     #This is for m=3
+    #Currently we have a fixed circuit, the controls are defined here:
     controls =["000","001","010","011","10","11"]
-    #theta_m3 =[0.59220374,0.67082012,0.70137334,0.720939,0.73261907,0.74665287]
     m_3=ThetaRotation(circ,qr,controls,5,thetas[1],True)
     circ.append(m_3,[*qr])
     #for the rest of the levels m>3
     for i in range((n-4)):
         controls =["0000","0001","001","01","10","11"]
-        #thetas=[[0.67107712,0.70335526,0.72139602,0.74093268,0.75778171,0.76536915],[0.72229088,0.7413661,0.75127389,0.76229837,0.7712584,0.77520995],[0.75208093,0.76253209,0.76820956,0.77361685,0.77824197,0.78025934],[0.76825558,0.77373839,0.77667612,0.77944766,0.78179804,0.7828174],[0.77669981,0.77950966,0.78100439,0.7824077,0.78359254,0.78410493]]
         fixed=ThetaRotation(circ,qr,controls,8-(4+i),thetas[i+2],True)
         circ.append(fixed,[*qr])
     circ.decompose().draw("mpl",fold=-1)
+
+    #Get the statevector at the current point in the circuit
     circ.save_statevector()
+    #Perform a measurement
     circ.measure(qr,cla_reg)
     shots = 1000
     backend= qt.Aer.get_backend("aer_simulator")
@@ -258,82 +264,16 @@ def Inspiral_Fixed_Rots(n):
     amps = amplitudes_for_theta(frequency)
     amps_7_6 = amplitudes_7_over_6(frequency)
     plt.plot(frequency,np.sqrt(state_vector.probabilities()),color='k',label='Statevector')
-    plt.plot(frequency,amps,color='r',label='Amps -7/3')
+    #plt.plot(frequency,amps,color='r',label='Amps -7/3')
     plt.plot(frequency,amps_7_6,color='b',label='Amps -7/6')
     plt.legend()
+    plt.xlabel('f (Hz)')
+    plt.ylabel('A')
     plt.show()
     print("Fidelity: ",Fidelity(amps_7_6,np.sqrt(state_vector.probabilities())))
-    print(dict(circ.decompose().decompose().count_ops()))
+    print(dict(circ.decompose().count_ops()))
 
-def Waveform_Fixed_Rots(n):
-    """[0.69120865] 
-    [0.75495778 0.49805573] 
-    [0.73051654 0.75904243 0.70661518 0.66738346] 
-    [0.72253677 0.74907001 0.75904243 0.70661518 0.66738346] 
-    [0.73570614 0.74916687 0.74907001 0.75904243 0.70661518 0.66738346]  """
 
-    """Ashwins theta values
-    [0.69134909] 
- [0.75468131 0.498768  ] 
- [0.7304692  0.75837712 0.70859427 0.66545498] 
- [0.72251893 0.74890938 0.75837712 0.70859427 0.66545498] 
- [0.73581314 0.74934639 0.74890938 0.75837712 0.70859427 0.66545498] """
-    qr= qt.QuantumRegister(size=n,name='q')
-    cla_reg =qt.ClassicalRegister(size=n,name="cla")
-    circ = qt.QuantumCircuit(qr,cla_reg)
-    #basic = General_State_Prep([0.69134909,0.75468131,0.498768,0.7304692,0.75837712, 0.70859427, 0.66545498])
-    basic = General_State_Prep([0.74928181,0.73045836,0.72835018,0.71932391,0.73274099,0.74580992,0.75401846])
-    
-    circ.append(basic,qr[0:3])
-    circ.save_statevector(label='v1')
-    #This is for m=3
-    #circ.save_statevector()
-    controls=["000"]
-    theta_m3=[0.72]
-    m_3=ThetaRotation(circ,qr,controls,3,theta_m3,True)
-    circ.append(m_3,[*qr])
-    controls =["000","100","10","01","11"]
-    #theta_m3=[0.72251893,0.74890938,0.75837712,0.70859427,0.66545498]
-    theta_m3 = [0.72434959,0.74059692,0.75007482,0.76163211,0.76743471] 
-    m_3=ThetaRotation(circ,qr,controls,5,theta_m3,True)
-    circ.append(m_3,[*qr])
-    #for the rest of the levels m>3
-    circ.save_statevector(label='v2')
-    
-    for i in range((n-4)):
-        controls =["0000","1000","100","10","01","11"]
-        #theta_m4=[0.73581314,0.74934639,0.74890938,0.75837712,0.70859427,0.66545498]
-        theta_m4=[[0.74066914,0.75075189,0.75726406,0.76502399,0.77230382,0.77575838],[0.75760343,0.76520445,0.76942786,0.77434713,0.77851473,0.78040074],[0.76978013,0.77445391,0.77707962,0.77963685,0.78186772,0.78285331],[0.77710115,0.77969497,0.78110797,0.78245585,0.78361015,0.78411397],[0.78111943,0.78248617,0.78321923,0.77277432,0.78449838,0.7847531]]
-        fixed=ThetaRotation(circ,qr,controls,8-(4+i),theta_m4[i],True)
-        circ.append(fixed,[*qr])
-    circ.save_statevector(label='v3')
-    #circ.save_statevector()    
-    '''
-    #circ.save_statevector()
-    circ.measure(qr,cla_reg)
-    backend = qt.Aer.get_backend('statevector_simulator')
-    result = qt.execute(circ, backend, shots=500000)
-    # Get the statevector from result().
-    tqc = qt.transpile(circ,backend)
-    job = backend.run(tqc,shots=50000)
-    result = job.result()
-    counts = result.get_counts(tqc)
-    print("counts:",counts)
-    #statevector = result.get_statevector(circ)
-    #print(statevector)
-    '''
-    backend = QasmSimulator()
-    backend_options = 'statevector'
-    job = qt.execute(circ, backend, shots=1000)
-    result = job.result()
-    statevector=result.data(0)['v1']
-    statevector2=result.data(0)['v2']
-    statevector3=result.data(0)['v3']
-    circ.decompose().draw("mpl",fold=-1)
-    plt.show()
-    print(statevector)
-    print(statevector2)
-    print(statevector3)
 
 
 def Normalise(values):
