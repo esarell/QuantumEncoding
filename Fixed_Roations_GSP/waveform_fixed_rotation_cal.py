@@ -82,6 +82,7 @@ def rescale_f(current_Freq,fmin,fmax):
 
 def numerical_second_devirative(datapoint,fmin,fmax):
     """Get the numerical second log devirative  """
+    amps =[]
     x_list=[]
     y_list=[]
     first_devirative=[]
@@ -90,6 +91,7 @@ def numerical_second_devirative(datapoint,fmin,fmax):
     for i in datapoint:
         x = rescale_f(i[0],fmin,fmax)
         x_list.append(x)
+        amps.append(i[1])
         #log of the function squared
         y_list.append(math.log(math.pow(i[1],2)))
         if count!=len(datapoint):
@@ -107,16 +109,18 @@ def numerical_second_devirative(datapoint,fmin,fmax):
             second_devirative.append(stright_line_info[0])
         else:
             second_devirative.append(stright_line_info[0])
+    plt.plot(x_list, amps,label="Waveform: f")
     plt.plot(x_list, y_list,label="log f^2")
     plt.plot(x_list, first_devirative,label="1st derivative")
     plt.plot(x_list, second_devirative,label="2nd derivative")
-    plt.title("Log of the function squared")
+    plt.title("Calculating $\eta$ for our numerical distribution")
     plt.xlabel("f (Hz)")
     plt.ylabel("Amp")
     plt.legend()
     plt.show()
-
     eta = max(second_devirative)
+    if eta == 0.0:
+        eta = second_devirative[0]
     print("eta:",eta)
     
     return eta
@@ -283,22 +287,39 @@ def numerical_350points():
     k=calculate_k(eta,0.9999)
     print("k:",k)
 
+def numerical_512(n,err):
+    """
+    For 512 datapoints, we calculate eta and corresponding k values for each section 
+    Args:
+    n: number of qubits/level we want to split up to
+    err: the error we are willing to induce
+    """
+    with open("waveform_data.pkl", 'rb') as pickleFile:
+        datapoints = pickle.load(pickleFile)
+    fmin =40
+    fmax =350
+    data_min =0
+    no_datapoint = 512
+    print("Testing for err:",err)
+    for m in range(n):
+        print("level:",m)
+        temp_fmin = fmin
+        temp_data_min = data_min
+        freq_increment = (fmax-fmin)/2**m
+        data_increment = no_datapoint/2**m
+        for j in range(2**m):
+            freq_end = temp_fmin +freq_increment
+            data_end = temp_data_min +data_increment
+            eta=numerical_second_devirative(datapoints[int(temp_data_min):int(data_end)],temp_fmin,freq_end)
+            k=calculate_k(eta,err)
+            print("k:",k)
+            temp_fmin = freq_end
+            temp_data_min = data_end
+
 if __name__ == "__main__":
-    insprial_data =inspiral_point()
-    '''for i in range(len(insprial_data)-1):
-        print("fmin:",insprial_data[i][0])
-        print("fmax:",insprial_data[i+1][0])
-        print(straightline(insprial_data[i],insprial_data[i+1]))
-    '''
-    '''print("test 2")
-    print(insprial_data[0][1])
-    print(insprial_data[33][1])
-    coeffs = straightline(insprial_data[0],insprial_data[33])
-    print("fmax:",insprial_data[33][0])
-    n= inspiral_sec_log_der(coeffs[0],0,coeffs[1],40,insprial_data[33][0])
-    n= abs(n)   
-    print("n:",n)
-    k = calculate_k(n,0.9999)
-    print("k:",k)'''
+    #insprial_data =inspiral_point()
+    numerical_512(3,0.9999)
     #numerical_2dev_32points()
-    numerical_350points()
+    #numerical_350points()
+
+
