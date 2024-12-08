@@ -87,7 +87,10 @@ def ThetaRotation(circ,qr,condition,qubit_no,theta,wrap =True):
     qubit_no:which qubit
     wrap: boolean turns indivdual gates into one big gate defualt True 
     Returns: '''
+
     size_qr = len(qr)
+
+    #Wraps up the circuit into a single gate
     if wrap == True:
         qr =qt.QuantumRegister(size_qr,"qr")
         circ = qt.QuantumCircuit(qr)
@@ -263,7 +266,7 @@ def Inspiral_Fixed_Rots(n):
 
     amps = amplitudes_for_theta(frequency)
     amps_7_6 = amplitudes_7_over_6(frequency)
-    plt.plot(frequency,np.sqrt(state_vector.probabilities()),color='k',label='Statevector')
+    plt.plot(frequency,np.sqrt(state_vector.probabilities()),color='k',label='Statevector',marker = 'o',ms = 2,linestyle='None')
     #plt.plot(frequency,amps,color='r',label='Amps -7/3')
     plt.plot(frequency,amps_7_6,color='b',label='Amps -7/6')
     plt.legend()
@@ -272,9 +275,85 @@ def Inspiral_Fixed_Rots(n):
     plt.show()
     print("Fidelity: ",Fidelity(amps_7_6,np.sqrt(state_vector.probabilities())))
     print(dict(circ.decompose().count_ops()))
+    print(dict(circ.decompose().decompose().decompose().decompose().count_ops()))
+
+def theata_Fixed(frequency,m):
+    j=0
+    amps= amplitudes_for_theta(frequency)
+    thetas=[]
+    gsp_theta=[]
+    for i in range(m):
+        j=pow(2,i)
+        if i<6:
+            for x in range(j):
+                start=int(x*pow(2,m-i))
+                mid = int((x+0.5)*pow(2,m-i))
+                end = int((x+1)*pow(2,m-i))
+                upper = sum(amps[start:(mid)])
+                lesser =sum(amps[start:(end)])
+                costheta2 = upper/lesser
+                costheta = np.sqrt(costheta2)
+                theta = np.arccos(costheta) 
+                gsp_theta.append(theta*2)
+        else:
+            if i ==6:
+                thetas.append(gsp_theta)
+            current_index=0
+            place = current_index/pow(2,m-i)
+            increment = int(pow(2,m)/pow(2,i))
+            mid =int((place+0.5)*pow(2,m-i))
+            end=int((place+1)*pow(2,m-i))
+            upper = sum(amps[current_index:mid])
+            lesser =sum(amps[current_index:end])
+            costheta2 = upper/lesser
+            costheta = np.sqrt(costheta2)
+            theta = np.arccos(costheta) 
+            thetas.append(theta*2)
+    return thetas
 
 
+def Fixed_Rot_Old(n):
+    ''' Fixed Rotations go up to level k then go a single rotation
+    '''
+    qr= qt.QuantumRegister(size=n,name='q')
+    cla_reg =qt.ClassicalRegister(size=n,name="cla")
+    circ = qt.QuantumCircuit(qr,cla_reg)
+    #had to do a reduced frequency range for fixed rotations
+    frequency = np.linspace(40,170,num=pow(2,n),endpoint=False)
+    #k=is 6
+    thetas = theata_Fixed(frequency,n)
+    print(thetas)
+    basic = General_State_Prep(thetas[0])
+    circ.append(basic,qr[n-6:n])
+    print(thetas[2])
+    for i in range((n-6)):
+        rotation_gate = RYGate(thetas[i+1])
+        print(n-7-i)
+        circ.append(rotation_gate,[qr[n-7-i]])
+    circ.save_statevector()
 
+    circ.measure(qr,cla_reg)
+    shots = 1000
+    backend= qt.Aer.get_backend("aer_simulator")
+    tqc = qt.transpile(circ,backend)
+    job = backend.run(tqc,shots=shots)
+    result = job.result()
+    state_vector = result.get_statevector(tqc)
+    #print("statevector:",state_vector)
+    circ.decompose().draw("mpl",fold=-1)
+    plt.show()
+    amps = amplitudes_for_theta(frequency)
+    amps_7_6 = amplitudes_7_over_6(frequency)
+    plt.plot(frequency,np.sqrt(state_vector.probabilities()),color='k',label='Fixed')
+    #plt.plot(frequency,amps,color='r',label='Amps -7/3')
+    plt.plot(frequency,amps_7_6,color='b',label='Amps -7/6')
+    plt.legend()
+    plt.xlabel('f (Hz)')
+    plt.ylabel('A')
+    plt.show()
+    print("Fidelity: ",Fidelity(amps_7_6,np.sqrt(state_vector.probabilities())))
+    print(dict(circ.decompose().count_ops()))
+    print(dict(circ.decompose().decompose().decompose().decompose().count_ops()))
 
 def Normalise(values):
     """
@@ -294,18 +373,47 @@ def test(n):
     circ = qt.QuantumCircuit(qr,cla_reg)
     #basic = General_State_Prep([0.69134909,0.75468131,0.498768,0.7304692,0.75837712, 0.70859427, 0.66545498])
     #basic = General_State_Prep([0.74928181,0.73045836,0.72835018,0.71932391,0.73274099,0.74580992,0.75401846,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8])
-    basic = General_State_Prep([0.867270505,0.818421983,0.548723411,0.796702905,0.80948195,0.95247867,0.296978124,0.790645952,0.791867976,0.794145441,0.801406291,0.821086042,0.943514493,0.616001409,0.521245153,0.788023101,0.788061049,0.788206058,0.789029605,0.78921198,0.790481467,0.792071168,0.794709994,0.799029946,0.807553099,0.825022378,0.924313151,0.474386805,0.897700349,0.703589962,0.253749431])
+    elements = np.linspace(0., 3., 63)
+    #basic = General_State_Prep([0.867270505,0.818421983,0.548723411,0.796702905,0.80948195,0.95247867,0.296978124,0.790645952,0.791867976,0.794145441,0.801406291,0.821086042,0.943514493,0.616001409,0.521245153,0.788023101,0.788061049,0.788206058,0.789029605,0.78921198,0.790481467,0.792071168,0.794709994,0.799029946,0.807553099,0.825022378,0.924313151,0.474386805,0.897700349,0.703589962,0.253749431])
+    basic = General_State_Prep(elements)
     circ.append(basic,qr)
-    circ.save_statevector(label='v1')
-    circ.decompose().draw("mpl",fold=-1)
+    '''circ.save_statevector(label='v1')
+    circ.decompose().draw("mpl",fold=-1)'''
     backend = QasmSimulator()
     job = qt.execute(circ, backend, shots=1000)
     result = job.result()
     
-    statevector=result.data(0)['v1']
+    #statevector=result.data(0)['v1']
     circ.decompose().draw("mpl",fold=-1)
     plt.show()
-    print(statevector)
+    print(dict(circ.decompose().decompose().decompose().decompose().count_ops()))
+    #print(statevector)
+
+def plot_bounds(x_data,y_data,n):
+    """
+    args:
+    x_data
+    y_data
+    n: the level
+    """
+    fmin=0
+    fmax=512
+    for m in range(n):
+        plt.plot(frequency,amps_7_6,color='blue',label='Inspiral')
+        print("level:",m)
+        temp_fmin = fmin
+        freq_increment = (fmax-fmin)/2**(m+1)
+        for j in range(2**m):
+            print("j:",j)
+            print("temp_fmin:",temp_fmin)
+            freq_end = temp_fmin +freq_increment
+            plt.axvline(x = 195, color = '#635dff')
+            plt.fill_between(frequency[int(temp_fmin):int(freq_end)], 0,amps_7_6[int(temp_fmin):int(freq_end)], color='#dcdcfd')
+            temp_fmin = freq_end+freq_increment
+        plt.legend(["This is my legend"], fontsize="x-large")
+        plt.show()
+
+    
 
 
 if __name__ == "__main__":
@@ -316,7 +424,67 @@ if __name__ == "__main__":
     for i in data[0]:
         values.append(float(i))
     Normalise(values)'''
+    frequency = np.linspace(40,350,num=pow(2,9),endpoint=False)
+    amps_7_6 = amplitudes_7_over_6(frequency)
+    print(Fidelity(amps_7_6,amps_7_6))
     Inspiral_Fixed_Rots(9)
+    #Fixed_Rot_Old(9)
+    #test(6)
+    frequency = np.linspace(40,350,num=pow(2,9),endpoint=False)
+    amps_7_6 = amplitudes_7_over_6(frequency)
+    plot_bounds(frequency,amps_7_6,2)
+    '''m=3
+    plt.axvline(x = 195, color = '#635dff', label = 'Reduced')
+    plt.axvline(x = 117.5, color = '#54d5c2', label = 'Complete')
+    plt.axvline(x = 272.5, color = '#54d5c2')
+
+    plt.axvline(x = 78.75, color = '#54d5c2',)
+    plt.axvline(x = 156.25, color = '#54d5c2')
+    #plt.axvline(x = 233.75, color = 'black')
+    plt.axvline(x = 272.5, color = '#635dff')
+
+
+
+    plt.fill_between(frequency[0:32], 0,amps_7_6[0:32], color='#dcdcfd',label=r'$\cos^2(\theta)$')
+    plt.fill_between(frequency[64:96], 0,amps_7_6[64:96], color='#dcdcfd')
+    plt.fill_between(frequency[128:160], 0,amps_7_6[128:160], color='#dcdcfd')
+    plt.fill_between(frequency[192:224], 0,amps_7_6[192:224], color='#dcdcfd')
+    plt.fill_between(frequency[256:288], 0,amps_7_6[256:288], color='#dcdcfd')
+    plt.fill_between(frequency[384:416], 0,amps_7_6[384:416], color='#dcdcfd')'''
+    #m=4
+    '''plt.axvline(x = 195, color = '#ec3e3e', label = 'Fixed Bounds')
+    plt.axvline(x = 272.5, color = '#ec3e3e')
+
+    plt.axvline(x = 117.5, color = '#ec3e3e')
+    plt.axvline(x = 272.5, color = '#ec3e3e')
+    
+    plt.axvline(x = 78.75, color = '#ec3e3e')
+    plt.axvline(x = 59.375, color = '#ec3e3e')'''
+    
+    #plt.axvline(x = 233.75, color = 'black')
+    
+
+
+
+    '''plt.fill_between(frequency[0:16], 0,amps_7_6[0:16], color='#ffd9d9',label=r'$\cos^2(\theta)$')
+    plt.fill_between(frequency[32:48], 0,amps_7_6[32:48], color='#ffd9d9')
+    plt.fill_between(frequency[64:80], 0,amps_7_6[64:80], color='#ffd9d9')
+    plt.fill_between(frequency[128:144], 0,amps_7_6[128:144], color='#ffd9d9')
+    
+    plt.fill_between(frequency[256:272], 0,amps_7_6[256:272], color='#ffd9d9')
+    plt.fill_between(frequency[384:400], 0,amps_7_6[384:400], color='#ffd9d9')'''
+    '''plt.fill_between(frequency[0:8], 0,amps_7_6[0:8], color='#ffd9d9',label=r'$\cos^2(\theta)$')
+    plt.fill_between(frequency[32:40], 0,amps_7_6[32:40], color='#ffd9d9')
+    plt.fill_between(frequency[64:72], 0,amps_7_6[64:72], color='#ffd9d9')
+    plt.fill_between(frequency[128:136], 0,amps_7_6[128:136], color='#ffd9d9')
+    
+    plt.fill_between(frequency[256:264], 0,amps_7_6[256:264], color='#ffd9d9')
+    plt.fill_between(frequency[384:392], 0,amps_7_6[384:392], color='#ffd9d9')'''
+    plt.title("Inspiral")
+    plt.legend(loc='upper right')
+    plt.xlabel('f (Hz)')
+    plt.ylabel('A')
+    plt.show()
     #Waveform_Fixed_Rots(9)
     #test(5)
     #thetas = theta()
