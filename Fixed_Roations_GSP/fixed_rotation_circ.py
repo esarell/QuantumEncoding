@@ -5,41 +5,14 @@ import matplotlib.pyplot as plt
 import csv
 import numpy as np
 
-def GR_Const_Theta(n,k,theta_array):
-    """This is the code which first does general state preparation
-    Then after a point k, we do fixed theta values
-    Args: n: number of qubits
-    k: when you flip systems
-    theta: a list of theta values
-    Returns: an encoded quantum circuit"""
-    fixed_theta=[0.12,0.23,0.4,0.1,0.32,0.64,0.11,0.22]
-    control=["000","001","010","011","100","101","110","111"]
-    qr= qt.QuantumRegister(n,'q')
-    lab=qt.QuantumRegister(1,"L")
-    # We then will add 6 bits for the ancillary register 
-    anc = qt.QuantumRegister(n,'ancilla')
-    circ = qt.QuantumCircuit(qr,lab,anc)
-    #Loop through each level of m
-    x_gate_pattern =[]    
-    #xGateAdd(k,x_gate_pattern,circ,qr,theta_array,n)
-
-    amount = n-k-1
-    print("amount:",amount)
-    #rotation_gate = RYGate(0.3).control(3,ctrl_state="110")
-    #circ.append(rotation_gate,[*qr[6:9],qr[4]])
-    
-    #Adds the fixed theta rotation this if for 3 controls
-    #So this is for 8 theta values per each level
-    for i in range(amount):
-       for n,value in enumerate(fixed_theta):
-            rotation_gate = RYGate(value).control(3,ctrl_state=control[n])
-            circ.append(rotation_gate,[*qr[6:9],qr[amount-1-i]])
-
-    circ.draw("mpl")
-    plt.show()
 
 #This is Roselyns code
 def GenBinaryStrings(length):
+    """
+
+    :param length:
+    :return:
+    """
     binary_strings = []
     max_num = 2 ** length
 
@@ -51,11 +24,21 @@ def GenBinaryStrings(length):
 
 #This is Roselyns code
 def ReverseString(stringlist):
+    """
+
+    :param stringlist:
+    :return:
+    """
     reversed_list = [string[::-1] for string in stringlist]
     return reversed_list
 
 #This is Roselyns code with my additions
 def General_State_Prep(rotations):
+    """
+
+    :param rotations:
+    :return:
+    """
     index=1
     num_qubits=len(rotations).bit_length()
     #builds blank circuit
@@ -77,16 +60,18 @@ def General_State_Prep(rotations):
 
     return circuit
 
-
-
 def ThetaRotation(circ,qr,condition,qubit_no,theta,wrap =True):
-    '''Args:
-    circ: quantum circuit
-    qr: quantum register
-    condition:list of str what conditions should it have
-    qubit_no:which qubit
-    wrap: boolean turns indivdual gates into one big gate defualt True 
-    Returns: '''
+    """
+    Generates a circuit made of Rotational Y gates which have controls based on predetermined
+    conditions.
+    :param circ: quantum circuit
+    :param qr: quantum register
+    :param condition: list of str what conditions should it have
+    :param qubit_no: which qubit
+    :param theta:list of corresponding theta values
+    :param wrap: boolean wraps gates together into a single gate
+    :return: quantum circuit
+    """
 
     size_qr = len(qr)
 
@@ -97,13 +82,11 @@ def ThetaRotation(circ,qr,condition,qubit_no,theta,wrap =True):
     
     for count,i in enumerate(condition):
         start = len(i)
-        print("i",len(i))
         rotation_gate = RYGate(theta[count]).control(len(i),ctrl_state=i)
         #[*qr[num_qubits-i-1:][::-1]
-        #The 8 here is currently hard coded for n=9 qubits, this could be easily changed by passing through n as a parameter
+        #TODO The 8 here is currently hard coded for n=9 qubits, this could be easily changed by passing through n as a parameter
         circ.append(rotation_gate,[*qr[(8-len(i)+1):],qr[qubit_no]])
         #circ.append(rotation_gate,[*qr[9-3:][::-1]])
-
 
     if wrap ==True:
         circ = circ.to_gate()
@@ -112,8 +95,12 @@ def ThetaRotation(circ,qr,condition,qubit_no,theta,wrap =True):
     return circ
 
 def amplitudes_for_theta(f):
-    """Samples the distributions at the given frequency
-    Then normalises them so them squared and summed =1"""
+    """
+    Samples the function f^{-7/3} at the given frequency
+    Then normalises them so them squared and summed =1
+    :param f: list of frequency values
+    :return: list of normalised amplitudes
+    """
     result =[]
     normalised=[]
     for i in f:
@@ -125,20 +112,23 @@ def amplitudes_for_theta(f):
     return normalised
 
 def theta(frequency,m):
-    '''
-    Generates thetas for a list of frequencys
-    Args: frequency: A list of all the frequencys you will be calculating theta for
-    m: the number of qubits in the circ
-    '''
+    """
+    Generates thetas for a list of frequencies
+    :param frequency:
+    :param m: A list of all the frequencies you will be calculating theta for
+    :return: the number of qubits in the circ
+    This is specifically for f^-7/6 (so p(i)is f^-7/3)
+    TODO Generalise the function for any function
+    """
     j=0
-    #This is specifically for f^-7/6 (so p(i)is f^-7/3)
-    #Will need changing for a more complicatated distribution
-    #Gets a list of normalised amplitudes for all the frequencies 
+
+    #Gets a list of normalised amplitudes for all the frequencies
     amps= amplitudes_for_theta(frequency)
     thetas=[]
     gsp_theta=[]
     for i in range(m):
         j=pow(2,i)
+        #For GSP we calculate all possible theta values
         if i<3:
             for x in range(j):
                 start=int(x*pow(2,m-i))
@@ -150,47 +140,52 @@ def theta(frequency,m):
                 costheta = np.sqrt(costheta2)
                 theta = np.arccos(costheta) 
                 gsp_theta.append(theta*2)
+        #For our reduced circuit we only calculate theta values at specific starting points (indexs)
         elif i>=3:
-            #print("m:",i)
+            #Our intermediate level
             if i==3:
                 thetas.append(gsp_theta)
                 '''Starting points frequency: 40,78.75,117,156.25,195,272.5
-                #These indexs are hard coded for when n=9 would need to be changed for different points
-                #Also these directly correspond with the set up of the circuit so would also need to be changed if the circuit changes'''
+                These indexs are hard coded for when n=9 would need to be changed for different points
+                Also these directly correspond with the set up of the circuit 
+                so would also need to be changed if the circuit changes
+                TODO Generalise this so we send through index'''
                 index=[0,64,128,192,256,384]
                 #index=[0,4,8,12,16,24]
+            #Final circuit structure
             else:
                 '''Set starting points for all the
                 40, 59.375, 78.75, 117.5, 195, 272.5
                 0,32,64,128,256,384'''
+                #TODO Gereralise this function
                 index=[0,32,64,128,256,384]
                 #index=[0,2,4,8,16,24]
             temp_theta =[]
+            #Calculates theta for a given index
             for current_index in index:
                 temp_start=current_index
-                print("start:",frequency[temp_start])
                 place = current_index/pow(2,m-i)
-                print("x:",place)
                 increment = int(pow(2,m)/pow(2,i))
                 mid =int((place+0.5)*pow(2,m-i))
                 end=int((place+1)*pow(2,m-i))
-                print("increment:",increment)
-                print("mid",mid)
-                print("end:",end)
                 upper = sum(amps[current_index:mid])
                 lesser =sum(amps[current_index:end])
                 costheta2 = upper/lesser
                 costheta = np.sqrt(costheta2)
-                theta = np.arccos(costheta) 
-                print("theta:",theta)
+                theta = np.arccos(costheta)
                 temp_theta.append(theta*2)
             thetas.append(temp_theta)
     if i<3:
         thetas.append(gsp_theta)
-    #print("theata:",thetas)
     return thetas
 
 def amplitudes_7_over_6(f):
+    """
+    Calcultes the amplitudes for the function f^{-7/6}
+    then normalises them
+    :param f: Frequency range
+    :return: list of normalised amplitudes
+    """
     result =[]
     normalised=[]
     for i in f:
@@ -202,13 +197,12 @@ def amplitudes_7_over_6(f):
     return normalised
 
 def Fidelity(expected_amps,measured_amps):
-    '''
-    Args: 
-    expected_amps: list of the amplitudes from the discritsed function
-    measured_amps: list of amplitudes taken from the statevector of the quantum circuit
-    Returns:
-    the fidelity (float)
-    '''
+    """
+    Caluclates the fidelity of two systems.
+    :param expected_amps: list of the amplitudes from the discritsed function
+    :param measured_amps: list of amplitudes taken from the statevector of the quantum circuit
+    :return: the fidelity (float)
+    """
     current =0
     for count,i in enumerate(expected_amps):
         current = current+(i*measured_amps[count])
@@ -216,13 +210,15 @@ def Fidelity(expected_amps,measured_amps):
     fidelity = current*current
     return fidelity
 
+def Inspiral_Fixed_Rots(n,PLOT=True):
+    """
+    Create a quantum circuit for the inspiral f^-7/6
+    :param n: number of qubits
+    :param PLOT: Boolean. Should you display the outcome?
+    :return:
+    """
 
-
-def Inspiral_Fixed_Rots(n):
-    """Create a circuit for the inspiral f^-7/6
-    Args: n: number of qubits """
-
-    #Creates the circuit, quantum register n large
+    #Sets up the circuit with a  quantum register n large
     #And a classic Register for measuring
     qr= qt.QuantumRegister(size=n,name='q')
     cla_reg =qt.ClassicalRegister(size=n,name="cla")
@@ -231,7 +227,7 @@ def Inspiral_Fixed_Rots(n):
     #Generate theta values for the GSP section
     #A list of frequency values evenly spaced, the amount is based on n
     frequency = np.linspace(40,350,num=pow(2,n),endpoint=False)
-    #Generates a two dimensional array, 0 position will contain all the thetas for GSP
+    #Generates a two-dimensional array, 0 position will contain all the thetas for GSP
     #The following positions will containing the theatas for each level up to n-1
     thetas = theta(frequency,n)
 
@@ -264,26 +260,37 @@ def Inspiral_Fixed_Rots(n):
     #print("statevector:",state_vector)
     plt.show()
 
+    #Generates the expected amplitudes
     amps = amplitudes_for_theta(frequency)
     amps_7_6 = amplitudes_7_over_6(frequency)
-    plt.plot(frequency,np.sqrt(state_vector.probabilities()),color='k',label='Statevector',marker = 'o',ms = 2,linestyle='None')
-    #plt.plot(frequency,amps,color='r',label='Amps -7/3')
-    plt.plot(frequency,amps_7_6,color='b',label='Amps -7/6')
-    plt.legend()
-    plt.xlabel('f (Hz)')
-    plt.ylabel('A')
-    plt.show()
+
+    #Plots the
+    if PLOT:
+        plt.plot(frequency,np.sqrt(state_vector.probabilities()),color='k',label='Statevector',marker = 'o',ms = 2,linestyle='None')
+        plt.plot(frequency,amps_7_6,color='b',label='Amps -7/6')
+        plt.legend()
+        plt.xlabel('f (Hz)')
+        plt.ylabel('A')
+        plt.show()
+        print(dict(circ.decompose().count_ops()))
+        print(dict(circ.decompose().decompose().decompose().decompose().count_ops()))
     print("Fidelity: ",Fidelity(amps_7_6,np.sqrt(state_vector.probabilities())))
-    print(dict(circ.decompose().count_ops()))
-    print(dict(circ.decompose().decompose().decompose().decompose().count_ops()))
 
 def theata_Fixed(frequency,m):
+    """
+    Generates the corresponding theta values for the fixed circuit
+    :param frequency:
+    :param m: the levels we are going to
+    :return: list of all the theta values for the circuit
+    """
+    #TODO Combine with Theta function
     j=0
     amps= amplitudes_for_theta(frequency)
     thetas=[]
     gsp_theta=[]
     for i in range(m):
         j=pow(2,i)
+        #Calculates the Thetas for GSP
         if i<6:
             for x in range(j):
                 start=int(x*pow(2,m-i))
@@ -296,6 +303,7 @@ def theata_Fixed(frequency,m):
                 theta = np.arccos(costheta) 
                 gsp_theta.append(theta*2)
         else:
+            #Calculates a single theta for all remaining levels
             if i ==6:
                 thetas.append(gsp_theta)
             current_index=0
@@ -311,21 +319,33 @@ def theata_Fixed(frequency,m):
             thetas.append(theta*2)
     return thetas
 
+def Fixed_Rot_Old(n,PLOT=True):
+    """
+    Fixed Rotations go up to level k then go a single rotation
+    Based on the paper (Marin-Sanchez, et al. 2023)
+    :param n: number of qubits
+    :param PLOT: Boolean. Should you display the outcome?
+    :return: None
+    """
 
-def Fixed_Rot_Old(n):
-    ''' Fixed Rotations go up to level k then go a single rotation
-    '''
+    #Create Quantum Circuit of size n. With a corresponding classical register
     qr= qt.QuantumRegister(size=n,name='q')
     cla_reg =qt.ClassicalRegister(size=n,name="cla")
     circ = qt.QuantumCircuit(qr,cla_reg)
-    #had to do a reduced frequency range for fixed rotations
+
+    #For the Fixed Rotation algoithm a smaller frequency range was used
     frequency = np.linspace(40,170,num=pow(2,n),endpoint=False)
-    #k=is 6
+
+    #Calculate theta values
     thetas = theata_Fixed(frequency,n)
-    print(thetas)
-    basic = General_State_Prep(thetas[0])
-    circ.append(basic,qr[n-6:n])
+
+    GSP = General_State_Prep(thetas[0])
+    circ.append(GSP,qr[n-6:n])
     print(thetas[2])
+    '''
+    k is 6 so we do 6 levels of general state preperation (full Grover-Rudolph)
+    Then switch to single rotations
+    '''
     for i in range((n-6)):
         rotation_gate = RYGate(thetas[i+1])
         print(n-7-i)
@@ -342,60 +362,34 @@ def Fixed_Rot_Old(n):
     #print("statevector:",state_vector)
     circ.decompose().draw("mpl",fold=-1)
     plt.show()
+
     amps = amplitudes_for_theta(frequency)
     amps_7_6 = amplitudes_7_over_6(frequency)
-    plt.plot(frequency,np.sqrt(state_vector.probabilities()),color='k',label='Fixed')
-    #plt.plot(frequency,amps,color='r',label='Amps -7/3')
-    plt.plot(frequency,amps_7_6,color='b',label='Amps -7/6')
-    plt.legend()
-    plt.xlabel('f (Hz)')
-    plt.ylabel('A')
-    plt.show()
+    if PLOT:
+        plt.plot(frequency,np.sqrt(state_vector.probabilities()),color='k',label='Fixed')
+        plt.plot(frequency,amps_7_6,color='b',label='Amps -7/6')
+        plt.legend()
+        plt.xlabel('f (Hz)')
+        plt.ylabel('A')
+        plt.show()
+        print(dict(circ.decompose().count_ops()))
+        print(dict(circ.decompose().decompose().decompose().decompose().count_ops()))
+    #Calculates the fidelity of the system
     print("Fidelity: ",Fidelity(amps_7_6,np.sqrt(state_vector.probabilities())))
-    print(dict(circ.decompose().count_ops()))
-    print(dict(circ.decompose().decompose().decompose().decompose().count_ops()))
-
-def Normalise(values):
-    """
-    input a string of values
-    return: normalised values (add up to 1)
-    """
-    new = []
-    total = sum(values)
-    for i in values:
-        new.append(i/total)
-    print(new)
-    return new
-
-def test(n):
-    qr= qt.QuantumRegister(size=n,name='q')
-    cla_reg =qt.ClassicalRegister(size=n,name="cla")
-    circ = qt.QuantumCircuit(qr,cla_reg)
-    #basic = General_State_Prep([0.69134909,0.75468131,0.498768,0.7304692,0.75837712, 0.70859427, 0.66545498])
-    #basic = General_State_Prep([0.74928181,0.73045836,0.72835018,0.71932391,0.73274099,0.74580992,0.75401846,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8])
-    elements = np.linspace(0., 3., 63)
-    #basic = General_State_Prep([0.867270505,0.818421983,0.548723411,0.796702905,0.80948195,0.95247867,0.296978124,0.790645952,0.791867976,0.794145441,0.801406291,0.821086042,0.943514493,0.616001409,0.521245153,0.788023101,0.788061049,0.788206058,0.789029605,0.78921198,0.790481467,0.792071168,0.794709994,0.799029946,0.807553099,0.825022378,0.924313151,0.474386805,0.897700349,0.703589962,0.253749431])
-    basic = General_State_Prep(elements)
-    circ.append(basic,qr)
-    '''circ.save_statevector(label='v1')
-    circ.decompose().draw("mpl",fold=-1)'''
-    backend = QasmSimulator()
-    job = qt.execute(circ, backend, shots=1000)
-    result = job.result()
-    
-    #statevector=result.data(0)['v1']
-    circ.decompose().draw("mpl",fold=-1)
-    plt.show()
-    print(dict(circ.decompose().decompose().decompose().decompose().count_ops()))
-    #print(statevector)
 
 def plot_bounds(x_data,y_data,n):
     """
+    Displays G-R Plots for our distribution
     args:
-    x_data
+    x_data: our frequency data
     y_data
-    n: the level
+    n: the number of qubits
+
+    return:
+    None
+
     """
+
     fmin=0
     fmax=512
     for m in range(n):
@@ -413,26 +407,15 @@ def plot_bounds(x_data,y_data,n):
         plt.legend(["This is my legend"], fontsize="x-large")
         plt.show()
 
-    
-
 
 if __name__ == "__main__":
-    '''with open('test.csv', newline='') as f:
-        reader = csv.reader(f)
-        data = list((reader))
-    values=[]
-    for i in data[0]:
-        values.append(float(i))
-    Normalise(values)'''
-    frequency = np.linspace(40,350,num=pow(2,9),endpoint=False)
-    amps_7_6 = amplitudes_7_over_6(frequency)
-    print(Fidelity(amps_7_6,amps_7_6))
     Inspiral_Fixed_Rots(9)
     #Fixed_Rot_Old(9)
     #test(6)
-    frequency = np.linspace(40,350,num=pow(2,9),endpoint=False)
+    '''frequency = np.linspace(40,350,num=pow(2,9),endpoint=False)
     amps_7_6 = amplitudes_7_over_6(frequency)
-    plot_bounds(frequency,amps_7_6,2)
+    plot_bounds(frequency,amps_7_6,2)'''
+
     '''m=3
     plt.axvline(x = 195, color = '#635dff', label = 'Reduced')
     plt.axvline(x = 117.5, color = '#54d5c2', label = 'Complete')
@@ -442,8 +425,6 @@ if __name__ == "__main__":
     plt.axvline(x = 156.25, color = '#54d5c2')
     #plt.axvline(x = 233.75, color = 'black')
     plt.axvline(x = 272.5, color = '#635dff')
-
-
 
     plt.fill_between(frequency[0:32], 0,amps_7_6[0:32], color='#dcdcfd',label=r'$\cos^2(\theta)$')
     plt.fill_between(frequency[64:96], 0,amps_7_6[64:96], color='#dcdcfd')
@@ -462,9 +443,6 @@ if __name__ == "__main__":
     plt.axvline(x = 59.375, color = '#ec3e3e')'''
     
     #plt.axvline(x = 233.75, color = 'black')
-    
-
-
 
     '''plt.fill_between(frequency[0:16], 0,amps_7_6[0:16], color='#ffd9d9',label=r'$\cos^2(\theta)$')
     plt.fill_between(frequency[32:48], 0,amps_7_6[32:48], color='#ffd9d9')
@@ -480,42 +458,4 @@ if __name__ == "__main__":
     
     plt.fill_between(frequency[256:264], 0,amps_7_6[256:264], color='#ffd9d9')
     plt.fill_between(frequency[384:392], 0,amps_7_6[384:392], color='#ffd9d9')'''
-    plt.title("Inspiral")
-    plt.legend(loc='upper right')
-    plt.xlabel('f (Hz)')
-    plt.ylabel('A')
-    plt.show()
-    #Waveform_Fixed_Rots(9)
-    #test(5)
-    #thetas = theta()
-    #print(thetas)
-    #frequency = [40,78.75,117.5,156.25,195,233.75,272.5,311.25]
-    '''frequency = np.linspace(40,350,num=512,endpoint=False)
-    print(frequency)
-    thetas = theta(frequency)'''
-    '''qr= qt.QuantumRegister(size=3,name='q')
-    circ = qt.QuantumCircuit(qr)
-    #basic =General_State_Prep([0.26651054,0.37298941,0.61763383,0.48799182,0.63950672,0.6883351,0.71262227])
-    basic =General_State_Prep(thetas)
-    #x_gate_pattern=[]
-    #xGateAdd(2,x_gate_pattern,circ,qr,thetas,3)
-    circ.append(basic,qr[0:3])
-    circ.save_statevector(label='v1')
-    backend = QasmSimulator()
-    backend_options = 'statevector'
-    job = qt.execute(circ, backend, shots=10000)
-    result = job.result()
-    statevector=result.data(0)['v1']
-    circ.decompose().draw("mpl",fold=-1)
-    plt.show()
-    print("StateVec:",statevector)
-    print("probs:",np.sqrt(statevector.probabilities()))
-    amps = amplitudes_for_theta(frequency)
-    amps_7_6 = amplitudes_7_over_6(frequency)
-    #plt.plot(frequency,np.sqrt(statevector.probabilities()),color='k',label='Statevector')
-    plt.plot(frequency,amps,color='r',label='Amps -7/3')
-    plt.plot(frequency,amps_7_6,color='b',label='Amps -7/6')
-    plt.legend()
-    plt.show()'''
-
     
