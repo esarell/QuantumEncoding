@@ -1,8 +1,6 @@
 import qiskit as qt
 from qiskit.circuit.library.standard_gates import RYGate
-from qiskit.providers.aer import QasmSimulator
 import matplotlib.pyplot as plt
-import csv
 import numpy as np
 
 
@@ -215,7 +213,7 @@ def Inspiral_Fixed_Rots(n,PLOT=True):
     Create a quantum circuit for the inspiral f^-7/6
     :param n: number of qubits
     :param PLOT: Boolean. Should you display the outcome?
-    :return:
+    :return: None
     """
 
     #Sets up the circuit with a  quantum register n large
@@ -245,7 +243,7 @@ def Inspiral_Fixed_Rots(n,PLOT=True):
         controls =["0000","0001","001","01","10","11"]
         fixed=ThetaRotation(circ,qr,controls,8-(4+i),thetas[i+2],True)
         circ.append(fixed,[*qr])
-    circ.decompose().draw("mpl",fold=-1)
+    #circ.decompose().draw("mpl",fold=-1)
 
     #Get the statevector at the current point in the circuit
     circ.save_statevector()
@@ -258,22 +256,43 @@ def Inspiral_Fixed_Rots(n,PLOT=True):
     result = job.result()
     state_vector = result.get_statevector(tqc)
     #print("statevector:",state_vector)
-    plt.show()
+    #plt.show()
 
     #Generates the expected amplitudes
     amps = amplitudes_for_theta(frequency)
     amps_7_6 = amplitudes_7_over_6(frequency)
 
-    #Plots the
+    #Plots the results in comparision to the actual amplitudes
     if PLOT:
-        plt.plot(frequency,np.sqrt(state_vector.probabilities()),color='k',label='Statevector',marker = 'o',ms = 2,linestyle='None')
-        plt.plot(frequency,amps_7_6,color='b',label='Amps -7/6')
+        rc_results = np.sqrt(state_vector.probabilities())
+        result_fig = plt.figure()
+        result_fig.set_figwidth(8)
+        result_fig.set_figheight(6)
+        plt.plot(frequency,np.sqrt(state_vector.probabilities()),color='k',label='Statevector',ms = 2)
+        plt.plot(frequency,amps_7_6,color='r',label='Amps -7/6',linestyle='dashed')
         plt.legend()
         plt.xlabel('f (Hz)')
         plt.ylabel('A')
+        result_fig.savefig("../Images/Inspiral_Amplitudes.png",dpi=1000,bbox_inches='tight')
         plt.show()
+
+        #Count the number of gates for the circuit
         print(dict(circ.decompose().count_ops()))
         print(dict(circ.decompose().decompose().decompose().decompose().count_ops()))
+
+        #Plot the box plot to see the errors
+        difference = rc_results - amps_7_6
+        fig = plt.figure()
+        fig.set_figwidth(8)
+        fig.set_figheight(2)
+        plt.boxplot(abs(difference),vert=False,widths=1)
+        plt.ylim(0,2)
+        plt.yticks([])
+        plt.xlabel("Error")
+        #plt.title("Boxplot showing the errors between the datapoints encoded by the reduced circuit\n and the intended amplitudes.")
+        fig.savefig('../Images/Inspiral_boxplot.png', dpi=1000,bbox_inches='tight')
+        plt.show()
+
     print("Fidelity: ",Fidelity(amps_7_6,np.sqrt(state_vector.probabilities())))
 
 def theata_Fixed(frequency,m):
@@ -393,7 +412,7 @@ def plot_bounds(x_data,y_data,n):
     fmin=0
     fmax=512
     for m in range(n):
-        plt.plot(frequency,amps_7_6,color='blue',label='Inspiral')
+        plt.plot(x_data,y_data,color='blue',label='Inspiral')
         print("level:",m)
         temp_fmin = fmin
         freq_increment = (fmax-fmin)/2**(m+1)
@@ -402,7 +421,7 @@ def plot_bounds(x_data,y_data,n):
             print("temp_fmin:",temp_fmin)
             freq_end = temp_fmin +freq_increment
             plt.axvline(x = 195, color = '#635dff')
-            plt.fill_between(frequency[int(temp_fmin):int(freq_end)], 0,amps_7_6[int(temp_fmin):int(freq_end)], color='#dcdcfd')
+            plt.fill_between(x_data[int(temp_fmin):int(freq_end)], 0,y_data[int(temp_fmin):int(freq_end)], color='#dcdcfd')
             temp_fmin = freq_end+freq_increment
         plt.legend(["This is my legend"], fontsize="x-large")
         plt.show()
