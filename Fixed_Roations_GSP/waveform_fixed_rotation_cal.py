@@ -15,31 +15,6 @@ def straightline(point1,point2):
     c = point1[1]- m*point1[0]
     return [m,c]
 
-def gen_lin_vals(linearParams, fmin,fmax,no_point):
-    increment = (fmax-fmin)/no_point
-    data=[]
-    for i in no_point:
-        y=linearParams[0]*fmin+linearParams[1]
-        data.append([fmin,y])
-        fmin= fmin+increment
-    return data
-
-def inspiral_sec_log_der(a,x,b,fmin,fmax):
-    """Args:
-    a:the gradient of the straight line
-    b:the y intercept from the staright line
-    x: value we are evaluating
-    fmin:the starting frequency of the line
-    fmax:the ending freqency of the line  """
-    denominator = math.pow(((a*((x*(fmax-fmin))+fmin))+b),2)
-    n = (-2*math.pow(a,2))/denominator
-    return n
-
-
-def inspiral_fun(f):
-    amp = math.pow(f,(-7/6))
-    return amp
-
 def inspiral_point():
     no =33
     fmin =40
@@ -53,17 +28,7 @@ def inspiral_point():
         fmin=fmin+delta
     return data
 
-def cal_n_1_over_log(x,fmin,fmax):
-    delta = fmax-fmin
-    top_frac = 2*math.pow(delta,2)*(math.log((delta*x)+fmin)+1)
-    bottom_frac = math.pow(delta*x+fmin,2)*math.pow(math.log(delta*x+fmin),2)
-    n = top_frac/bottom_frac
-    return n 
 
-def cal_anltical_inspiral(x,fmax,fmin):
-    deltaf = fmax-fmin
-    bel_info = ((x*deltaf)+fmin)**2
-    info = (7/3)*((deltaf**2)/bel_info)
 
 def calculate_k(n,error_rate):
     first_log =math.log(error_rate,10)
@@ -78,9 +43,7 @@ def rescale_f(current_Freq,fmin,fmax):
     new = (current_Freq - fmin) /(fmax-fmin)
     return new
 
-
-
-def numerical_second_devirative(datapoint,Plot=False):
+def numerical_second_devirative(datapoint,fmin=40,fmax=350,Plot=True):
     """Get the numerical second log devirative  """
     amps =[]
     x_list=[]
@@ -89,21 +52,20 @@ def numerical_second_devirative(datapoint,Plot=False):
     second_devirative =[]
     count = 1
     for i in datapoint:
-        #x = rescale_f(i[0],fmin,fmax)
-        x_list.append(i[0])
+        """Rescale the fucntion, then find the log of the function squared"""
+        x = rescale_f(i[0],fmin,fmax)
+        x_list.append(x)
         amps.append(i[1])
         #log of the function squared
         y_list.append(math.log(math.pow(i[1],2)))
 
-    print(len(y_list))
     for count,value in enumerate(y_list):
         if count+1!=len(datapoint):
             temp =[x_list[count],value]
             temp_1 = [x_list[count+1],y_list[count+1]]
             stright_line_info =straightline(temp,temp_1)
-            '''stright_line_info =straightline(i,datapoint[count])
-            gradient = stright_line_info[0]
-            first_devirative.append(gradient)'''
+            #stright_line_info =straightline(i,datapoint[count])
+
             gradient = stright_line_info[0]
             first_devirative.append(gradient)
         '''else:
@@ -130,18 +92,21 @@ def numerical_second_devirative(datapoint,Plot=False):
         plt.legend()
         fig.savefig('../Images/Waveform_Eta.png', dpi=1000,bbox_inches='tight')
         plt.show()
+
     eta = max(second_devirative)
     if eta == 0.0:
         eta = second_devirative[0]
     print("eta:",eta)
-    print("len:",len(second_devirative))
+
     second_devirative.append(stright_line_info[0])
     second_devirative.append(stright_line_info[0])
-    return second_devirative
+
+    return [eta,second_devirative]
 
 def numerical_512(n,err,no_datapoint,datafile):
     """
-    For 512 datapoints, we calculate eta and corresponding k values for each section 
+    For 512 datapoints, we calculate eta and corresponding k values for each section
+    Note that this code doesn't work for the full waveform as it is not 2nd order differentable.
     Args:
     n: number of qubits/level we want to split up to
     err: the error we are willing to induce
@@ -165,7 +130,7 @@ def numerical_512(n,err,no_datapoint,datafile):
         for j in range(2**m):
             freq_end = temp_fmin +freq_increment
             data_end = temp_data_min +data_increment
-            eta=numerical_second_devirative(datapoints[int(temp_data_min):int(data_end)],temp_fmin,freq_end,Plot=True)
+            eta=numerical_second_devirative(datapoints[int(temp_data_min):int(data_end)],temp_fmin,freq_end)[0]
             k=calculate_k(eta,err)
             print("k:",k)
             temp_fmin = freq_end
@@ -173,9 +138,9 @@ def numerical_512(n,err,no_datapoint,datafile):
 
 def find_split(split,data):
     """
-
-    :param split:
-    :param datapoints:
+    Based on the frequency given this return the point in the list which is closest to the split
+    :param split: frequency value of the split
+    :param data: a list of all the datapoints
     :return: list index
     """
     print("split",data[0])
@@ -185,7 +150,7 @@ def find_split(split,data):
             return [count,i[0]]
 
 
-def derivative(data,Plot=True):
+'''def derivative(data,Plot=True):
     x_list=[]
     y_list=[]
     amps=[]
@@ -213,7 +178,7 @@ def derivative(data,Plot=True):
         fig.savefig('../Images/Waveform_Eta.png', dpi=1000,bbox_inches='tight')
         plt.show()
     eta = np.abs(div_2)
-    return np.max(eta)
+    return np.max(eta)'''
 
 def divirative_section(datafile,splits,err):
     """
@@ -250,10 +215,10 @@ def divirative_section(datafile,splits,err):
     for z in bounds:
         temp_data = datapoints[prev_bound:z[0]]
         print("prev:",prev_bound)
-        results = results +numerical_second_devirative(temp_data,Plot=True)
+        results = results +numerical_second_devirative(temp_data,Plot=True)[1]
         prev_bound = z[0]
     temp_data= datapoints[prev_bound:]
-    results = results + numerical_second_devirative(temp_data,Plot=True)
+    results = results + numerical_second_devirative(temp_data,Plot=True)[1]
 
     print("here")
     plt.plot(x_results, y_vals,label="Waveform")
@@ -267,5 +232,5 @@ def divirative_section(datafile,splits,err):
 if __name__ == "__main__":
     #insprial_data =inspiral_point()
     datafile="waveform_data.pkl"
-    divirative_section(datafile,[43.728557756818006,243.75275131383347],0.99999)
-    #numerical_512(3,0.9999,512,datafile)
+    #divirative_section(datafile,[43.728557756818006,243.75275131383347],0.99999)
+    numerical_512(3,0.9999,512,datafile)
