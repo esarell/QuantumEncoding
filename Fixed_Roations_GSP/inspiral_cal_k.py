@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import math
+import numpy as np
 '''This file calculates the relevant \eta values and corresponding k values
 for the inspiral of our gravitational wave approx f^{7/6} '''
 
@@ -146,12 +147,50 @@ def calculate_n_k(fmin,fsplit,error_rate):
     nk = [lower_info,k]
     return nk
 
+def cal_eta_k_fixed_bound(n,error_rate):
+    '''
+    Instead of rescaling we are trying to add a factor see what the outcome is
+    :param n:
+    :return:
+    '''
+    values = np.linspace(0,1,num=pow(2,9),endpoint=True)
+    print(len(values))
+    lower_deltaf = 350-40
+    lower_bel_info = ((values*lower_deltaf)+40)**2
+
+    lower_info = (7/3)*((lower_deltaf**2)/lower_bel_info)
+    for m in range(n):
+        print("level:",m)
+        temp_fmin = int(0)
+        increment = int((512-0)/2**m)
+        print("inc:",increment)
+        print(len(lower_info))
+        for j in range(2**m):
+            end = temp_fmin +increment
+            #Here add the factor
+            eta = math.pow(2,-(m)) *lower_info[temp_fmin]
+            print("\nn:",eta)
+            first_log =math.log(error_rate,10)
+            second_log =math.log((4**-9 - ((96/eta**2)*first_log)),2  )
+            k = -0.5 * second_log
+            print("k:",k)
+            temp_fmin = end
+        print("\n------\n")
+
+
+
+
+    #Uses eta to calcualte our level (k) where we can switch to fixed bounds
+
+
+
+
 
 if __name__ == "__main__":
     #Splits up my distribution for n levels 
     #Calculates a eta and corresponding k value
     err = 0.9999
-    n = 3
+    '''n = 3
     fmin =40
     fmax = 350
     print("Testing for err:",err)
@@ -162,4 +201,5 @@ if __name__ == "__main__":
         for j in range(2**m):
             end = temp_fmin +increment
             calculate_n_k(temp_fmin,end,err)
-            temp_fmin = end
+            temp_fmin = end'''
+    cal_eta_k_fixed_bound(6,err)
