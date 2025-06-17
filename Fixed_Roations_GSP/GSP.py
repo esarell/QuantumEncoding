@@ -3,7 +3,7 @@ This is the Grover-Rudolph Method for amplitude encoding'''
 import pickle
 import numpy as np
 from numpy.ma.core import absolute
-
+from waveform_fixed_rotation_cal import calculate_k
 
 def waveform_amps():
     """
@@ -58,9 +58,9 @@ def waveform_theta(frequency,m):
 
 
 def sig_square(k):
-    return (1/pow(2,(k-1)))**2
+    return (1/pow(2,(k-1)))
 
-def Compare_Theata(n):
+def Compare_Theata(n,Equation=17,RC=False):
     '''
     Compares the difference between the two theta values to see the eta value associated with it.
     Based on equation B17 by Marin-Sanchez et al.
@@ -70,20 +70,111 @@ def Compare_Theata(n):
     n=9
     frequency = np.linspace(40,350,num=pow(2,n),endpoint=False)
     angles = waveform_theta(frequency,n)
-    for count,i in enumerate(angles):
-        if count ==0:
-            print("no comparison for level m=0")
-            '''sig = 1/pow(2,1)
-            first = (abs([2]-i[1])*4)/pow(sig,2)
-            print("m 1:",first)'''
-        else:
-            #Level 2
-            sig = sig_square(count)
-            absolute_diff = (abs(i[1]-i[0]))
-            eta_approx = (absolute_diff/pow(sig,2))*4
-            print("m ",count)
-            print("diff",absolute_diff)
-            print("eta",eta_approx)
+    if Equation == 21:
+        print("Equation B21")
+        for count,i in enumerate(angles):
+            if count ==0:
+                print("no comparison for level m=0")
+                '''sig = 1/pow(2,1)
+                first = (abs([2]-i[1])*4)/pow(sig,2)
+                print("m 1:",first)'''
+            else:
+                #Level 2
+                sig = sig_square(count)
+                absolute_diff = (abs(i[0]-i[-1]))
+                eta_approx = (absolute_diff/sig)*4
+                print("m ",count)
+                print("diff",absolute_diff)
+                print("eta",eta_approx)
+                print ("k",calculate_k(eta_approx,0.9999))
+                print("\n-----------\n")
+    elif Equation == 22:
+        print("Equation B22")
+        for count,i in enumerate(angles):
+            #This is the angle differences for my circuit
+            if RC==True:
+                if count ==0:
+                    print("no comparison for level m=0")
+                elif count == 1 or count ==2:
+                    sig = sig_square(count)
+                    total =0
+                    for j,x in enumerate(i):
+                        try:
+                            absolute_diff = (abs(x-i[j+1]))
+                            total = total + absolute_diff
+                        except:
+                            total = total
+                    eta_approx = (total/sig)*4
+                    print("m ",count)
+                    print("total_diff",absolute_diff)
+                    print("eta",eta_approx)
+                    print ("k",calculate_k(eta_approx,0.9999))
+                    print("\n-----------\n")
+                elif count == 3:
+                    total=0
+                    sig = sig_square(count)
+                    diff_results=[]
+                    eta_result=[]
+                    k_result=[]
+                    print("m ",count)
+                    splits = ["000","001","010","011","10","11"]
+                    print(len(i[:-4]))
+                    for j,x in enumerate(i[:-1]):
+                        absolute_diff = (abs(x-i[j+1]))
+                        total = total + absolute_diff
+                        if j >= 4:
+                            diff_results.append(absolute_diff)
+                            eta_approx = (total/sig)*4
+                            eta_result.append(eta_approx)
+                            k_result.append(calculate_k(eta_approx,0.9999))
+                            total=0
+                    print("m ",count)
+                    print("total_diff",diff_results)
+                    print("eta",eta_result)
+                    print ("k",k_result)
+                    print("\n-----------\n")
+                    absolute_diff=0
+                elif count >= 4:
+                    print("m ",count)
+                    splits = [0,0.0625,0.125,0.25,0.375,0.5,0.75,1]
+                    for s_count,s in enumerate(splits[:-1]):
+                        total=0
+                        start = int(s*len(i))
+                        end = int(splits[s_count+1]*len(i))
+                        for j,x in enumerate(i[start:end]):
+                            absolute_diff = (abs(x-i[j+1]))
+                            total = total + absolute_diff
+                        eta_approx = (total/sig)*4
+                        print("total_diff",absolute_diff)
+                        print("eta",eta_approx)
+                        print ("k",calculate_k(eta_approx,0.9999))
+                    print("\n-----------\n")
+
+
+            else:
+                if count ==0:
+                    print("no comparison for level m=0")
+                    '''sig = 1/pow(2,1)
+                    first = (abs([2]-i[1])*4)/pow(sig,2)
+                    print("m 1:",first)'''
+                else:
+                    #Level 2
+                    sig = sig_square(count)
+                    total =0
+                    for j,x in enumerate(i):
+                        try:
+                            absolute_diff = (abs(x-i[j+1]))
+                            total = total + absolute_diff
+                        except:
+                            total = total
+                    eta_approx = (total/sig)*4
+                    print("m ",count)
+                    print("total_diff",absolute_diff)
+                    print("eta",eta_approx)
+                    print ("k",calculate_k(eta_approx,0.9999))
+                    print("\n-----------\n")
+
+
 
 def General_State_Prep(rotations):
     """
@@ -113,4 +204,5 @@ def General_State_Prep(rotations):
     return circuit
 
 if __name__ == "__main__":
-    Compare_Theata(9)
+    Compare_Theata(9,22)
+    Compare_Theata(9,22,RC=True)
