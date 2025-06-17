@@ -156,7 +156,7 @@ def theta(frequency,m):
                 40, 59.375, 78.75, 117.5, 195, 272.5
                 0,32,64,128,256,384'''
                 #TODO Gereralise this function
-                index=[0,32,64,128,256,384]
+                index=[0,32,64,128,192,256,384]
                 #index=[0,2,4,8,16,24]
             temp_theta =[]
             #Calculates theta for a given index
@@ -240,7 +240,7 @@ def Inspiral_Fixed_Rots(n,PLOT=True):
     circ.append(m_3,[*qr])
     #for the rest of the levels m>3
     for i in range((n-4)):
-        controls =["0000","0001","001","01","10","11"]
+        controls =["0000","0001","001","010","011","10","11"]
         fixed=ThetaRotation(circ,qr,controls,8-(4+i),thetas[i+2],True)
         circ.append(fixed,[*qr])
     #circ.decompose().draw("mpl",fold=-1)
@@ -338,64 +338,6 @@ def theata_Fixed(frequency,m):
             thetas.append(theta*2)
     return thetas
 
-def Fixed_Rot_Old(n,PLOT=True):
-    """
-    Fixed Rotations go up to level k then go a single rotation
-    Based on the paper (Marin-Sanchez, et al. 2023)
-    :param n: number of qubits
-    :param PLOT: Boolean. Should you display the outcome?
-    :return: None
-    """
-
-    #Create Quantum Circuit of size n. With a corresponding classical register
-    qr= qt.QuantumRegister(size=n,name='q')
-    cla_reg =qt.ClassicalRegister(size=n,name="cla")
-    circ = qt.QuantumCircuit(qr,cla_reg)
-
-    #For the Fixed Rotation algoithm a smaller frequency range was used
-    frequency = np.linspace(40,170,num=pow(2,n),endpoint=False)
-
-    #Calculate theta values
-    thetas = theata_Fixed(frequency,n)
-
-    GSP = General_State_Prep(thetas[0])
-    circ.append(GSP,qr[n-6:n])
-    print(thetas[2])
-    '''
-    k is 6 so we do 6 levels of general state preperation (full Grover-Rudolph)
-    Then switch to single rotations
-    '''
-    for i in range((n-6)):
-        rotation_gate = RYGate(thetas[i+1])
-        print(n-7-i)
-        circ.append(rotation_gate,[qr[n-7-i]])
-    circ.save_statevector()
-
-    circ.measure(qr,cla_reg)
-    shots = 1000
-    backend= qt.Aer.get_backend("aer_simulator")
-    tqc = qt.transpile(circ,backend)
-    job = backend.run(tqc,shots=shots)
-    result = job.result()
-    state_vector = result.get_statevector(tqc)
-    #print("statevector:",state_vector)
-    circ.decompose().draw("mpl",fold=-1)
-    plt.show()
-
-    amps = amplitudes_for_theta(frequency)
-    amps_7_6 = amplitudes_7_over_6(frequency)
-    if PLOT:
-        plt.plot(frequency,np.sqrt(state_vector.probabilities()),color='k',label='Fixed')
-        plt.plot(frequency,amps_7_6,color='b',label='Amps -7/6')
-        plt.legend()
-        plt.xlabel('f (Hz)')
-        plt.ylabel('A')
-        plt.show()
-        print(dict(circ.decompose().count_ops()))
-        print(dict(circ.decompose().decompose().decompose().decompose().count_ops()))
-    #Calculates the fidelity of the system
-    print("Fidelity: ",Fidelity(amps_7_6,np.sqrt(state_vector.probabilities())))
-
 def plot_bounds(x_data,y_data,n):
     """
     Displays G-R Plots for our distribution
@@ -428,7 +370,11 @@ def plot_bounds(x_data,y_data,n):
 
 
 if __name__ == "__main__":
+    #Correct one
     Inspiral_Fixed_Rots(9)
+    #Generate thetas
+    
+
     #Fixed_Rot_Old(9)
     #test(6)
     '''frequency = np.linspace(40,350,num=pow(2,9),endpoint=False)
