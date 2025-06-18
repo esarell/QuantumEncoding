@@ -134,3 +134,36 @@ def Fidelity(expected_amps,measured_amps):
 
     fidelity = current*current
     return fidelity
+
+def gsp_thetas(amps,m,n):
+    gsp_angles=[]
+    for i in range(m):
+        j=pow(2,i)
+        for x in range(j):
+            start=int(x*pow(2,n-i))
+            mid = int((x+0.5)*pow(2,n-i))
+            end = int((x+1)*pow(2,n-i))
+            upper = sum(amps[start:(mid)])
+            lesser =sum(amps[start:(end)])
+            costheta2 = upper/lesser
+            costheta = np.sqrt(costheta2)
+            theta = np.arccos(costheta)
+            gsp_angles.append(theta*2)
+    print("gsp_len",len(gsp_angles))
+    return gsp_angles
+
+def indexed_theta(amps,m,n,index):
+    indexed_angles=[]
+    for current_index in index:
+        temp_start=current_index
+        place = current_index/pow(2,n-m)
+        increment = int(pow(2,n)/pow(2,m))
+        mid =int((place+0.5)*pow(2,n-m))
+        end=int((place+1)*pow(2,n-m))
+        upper = sum(amps[current_index:mid])
+        lesser =sum(amps[current_index:end])
+        cos_theta2 = upper/lesser
+        cos_theta = np.sqrt(cos_theta2)
+        theta = np.arccos(cos_theta)
+        indexed_angles.append(theta*2)
+    return indexed_angles
