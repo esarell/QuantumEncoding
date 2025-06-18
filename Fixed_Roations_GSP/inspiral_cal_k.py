@@ -136,11 +136,11 @@ def calculate_n_k(fmin,fsplit,error_rate):
     #calculate /eta based off Theorem 1 (Marin-Sanchez, et al. 2023)
     lower_deltaf = fsplit-fmin
     lower_bel_info = ((0*lower_deltaf)+fmin)**2
-    lower_info = (7/3)*((lower_deltaf**2)/lower_bel_info)
+    lower_info = np.abs((7/3)*((lower_deltaf**2)/lower_bel_info))
     print("n:",lower_info)
 
     #Uses eta to calcualte our level (k) where we can switch to fixed bounds
-    first_log =math.log(error_rate,10)
+    first_log =np.log(error_rate)
     second_log =math.log((4**-9 - ((96/lower_info**2)*first_log)),2  )
     k = -0.5 * second_log
     print("k:",k)
@@ -169,9 +169,9 @@ def cal_eta_k_fixed_bound(n,error_rate):
             end = temp_fmin +increment
             #Here add the factor
             eta = math.pow(2,-(m)) *lower_info[temp_fmin]
-            print("\nn:",eta)
-            first_log =math.log(error_rate,10)
-            second_log =math.log((4**-9 - ((96/eta**2)*first_log)),2  )
+            print("\nn:",np.abs(eta))
+            first_log =np.log(error_rate)
+            second_log =np.log2(4**-9 - ((96/np.abs(eta)**2)*first_log))
             k = -0.5 * second_log
             print("k:",k)
             temp_fmin = end
@@ -190,7 +190,7 @@ if __name__ == "__main__":
     #Splits up my distribution for n levels 
     #Calculates a eta and corresponding k value
     err = 0.9999
-    '''n = 3
+    n = 5
     fmin =40
     fmax = 350
     print("Testing for err:",err)
@@ -201,5 +201,6 @@ if __name__ == "__main__":
         for j in range(2**m):
             end = temp_fmin +increment
             calculate_n_k(temp_fmin,end,err)
-            temp_fmin = end'''
-    cal_eta_k_fixed_bound(6,err)
+            temp_fmin = end
+        print("\n------\n")
+    #cal_eta_k_fixed_bound(5,err)
