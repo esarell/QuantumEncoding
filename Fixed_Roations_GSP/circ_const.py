@@ -36,8 +36,6 @@ def General_State_Prep(rotations):
     :param rotations:
     :return:
     """
-    print("rotations:")
-    print(rotations)
     index=1
     num_qubits=len(rotations).bit_length()
     #builds blank circuit
@@ -60,7 +58,7 @@ def General_State_Prep(rotations):
     return circuit
 
 
-def ThetaRotation(circ,qr,condition,qubit_no,theta_values,wrap =True):
+def ThetaRotation(circ,qr,condition,qubit_no,theta_values,n,wrap =True):
     """
 
     :param circ: quantum circuit
@@ -73,21 +71,13 @@ def ThetaRotation(circ,qr,condition,qubit_no,theta_values,wrap =True):
     """
 
     size_qr = len(qr)
-    print("size_qr",size_qr)
     if wrap == True:
         qr =qt.QuantumRegister(size_qr,"qr")
         circ = qt.QuantumCircuit(qr)
-    print(len(condition))
-    print("theats",len(theta_values))
     for count,i in enumerate(condition):
         start = len(i)
         rotation_gate = RYGate(theta_values[count]).control(len(i),ctrl_state=i)
-        #[*qr[num_qubits-i-1:][::-1]
-        #The 8 here is currently hard coded for n=8 qubits, this could be easily changed by passing through n as a parameter
-        print("qubit:",(4-len(i)+1))
-        circ.append(rotation_gate,[*qr[(4-len(i)+1):],qr[qubit_no]])
-        #circ.append(rotation_gate,[*qr[9-3:][::-1]])
-
+        circ.append(rotation_gate,[*qr[((n-1)-len(i)+1):],qr[qubit_no]])
 
     if wrap ==True:
         circ = circ.to_gate()
