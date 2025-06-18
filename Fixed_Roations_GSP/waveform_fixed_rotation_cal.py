@@ -1,13 +1,11 @@
 import matplotlib.pyplot as plt
 import math
 import pickle
-import csv
 import numpy as np
-from mpmath.libmp.libelefun import log_taylor_cache
 
 
-#Provided by ashwin from LinearSplineApprox.py 33 points
-#datapoints = [[40.0, 45.53588379231391], [41.73988252356714, 42.99468907854167], [43.60341387652148, 40.534160560597044], [45.60224410550622, 38.15604254353809], [47.750013001775706, 35.86154967907757], [50.06179757799808, 33.65242668859051], [52.55504724854148, 31.530155680572275], [55.2530432923146, 29.49343653352211], [58.18193853600308, 27.541866623249554], [61.36855354444498, 25.677762482084642], [64.8414792064986, 23.90506569350602], [68.63900132055133, 22.225094786058857], [72.80994794058644, 20.637790275494588], [77.4080959125527, 19.145254748772437], [82.50040406939527, 17.74900736770979], [88.17265962473014, 16.449716530123492], [94.52432260915532, 15.25000778588201], [101.68458619910827, 14.15186546357962], [109.82595132795439, 13.15617543160781], [119.21421437293974, 12.259090629726577], [130.20746393759126, 11.457567247773428], [143.36827004135537, 10.743344958945583], [159.8044251378891, 10.090026336348101], [182.26246814673658, 9.419528957212911], [225.86535582759427, 8.224181668209477], [259.0729889700747, 6.826576178869628], [269.37356128061754, 5.967553107437675], [280.82588990553296, 4.772774132870048], [309.22430385343546, 2.0406806963843023], [320.6491715928424, 1.357629093553048], [333.2701260238657, 0.8568326977345254], [348.555883309873, 0.4927565704511884], [350.0, 0.46802388200131884]]
+
+#Provided by Ashwin from LinearSplineApprox.py
 
 def straightline(point1,point2):
     #y=mx+c
@@ -16,12 +14,10 @@ def straightline(point1,point2):
     return [m,c]
 
 
-
-
 def calculate_k(n,error_rate):
-    first_log =math.log(error_rate,10)
+    first_log =np.log(error_rate)
     try:
-        second_log =math.log((4**-9 - ((96/n**2)*first_log)),2  )
+        second_log =np.log2((4**-9 - ((96/n**2)*first_log))  )
     except:
         second_log = 0
     k = -0.5 * second_log
@@ -41,14 +37,11 @@ def numerical_second_devirative(datapoint,fmin,fmax,Plot=True):
     count = 1
     for i in datapoint:
         """Rescale the fucntion, then find the log of the function squared"""
-
         x = rescale_f(i[0],fmin,fmax)
-
         x_list.append(i[0])
         amps.append(i[1])
         #log of the function squared
         y_list.append(math.log(math.pow(i[1],2)))
-
 
     for count,value in enumerate(y_list):
         if count+1!=len(datapoint):
@@ -56,7 +49,6 @@ def numerical_second_devirative(datapoint,fmin,fmax,Plot=True):
             temp_1 = [x_list[count+1],y_list[count+1]]
             stright_line_info =straightline(temp,temp_1)
             #stright_line_info =straightline(i,datapoint[count])
-
             gradient = stright_line_info[0]
             first_devirative.append(gradient)
         '''else:
@@ -87,7 +79,6 @@ def numerical_second_devirative(datapoint,fmin,fmax,Plot=True):
     eta = max(second_devirative)
     if eta == 0.0:
         eta = second_devirative[0]
-
 
     second_devirative.append(stright_line_info[0])
     second_devirative.append(stright_line_info[0])
@@ -201,7 +192,7 @@ def divirative_section(current_data,splits,err,fmin,fmax,Plot=True):
         current_data[count][0]=x
         x_results.append(x)
         y_vals.append(j[1])
-        log_val.append(math.log(math.pow(j[1],2)))
+        log_val.append(np.log(math.pow(j[1],2)))
 
     for z in bounds:
         temp_data = current_data[prev_bound:z[0]]
@@ -224,6 +215,7 @@ def divirative_section(current_data,splits,err,fmin,fmax,Plot=True):
     print("eta:",eta)
     k=calculate_k(eta,err)
     print("k:",k)
+    return results
 
 def waveform_derivative_cal(datafile,n,err):
 
@@ -253,11 +245,36 @@ def waveform_derivative_cal(datafile,n,err):
             temp_fmin = freq_end
             temp_data_min = data_end
 
+def cal_eta_k_fixed_bound(datafile,n,error_rate):
+    fmin =40
+    fmax =350
+    print("Testing for err:",error_rate)
+    splits= [43.728557756818006,243.75275131383347]
+    with open(datafile, 'rb') as pickleFile:
+        datapoints = pickle.load(pickleFile)
+    full_eta_result = np.array( divirative_section(datapoints,splits,err=error_rate,fmin= fmin,fmax= fmax,Plot=True))
+    print("\n----------\n")
+    for m in range(n):
+        print("level:",m)
+        temp_fmin = int(0)
+        increment = int((512-0)/2**m)
+        for j in range(2**m):
+            end = temp_fmin +increment
+            #Here add the factor
+            eta = math.pow(2,-(m)) *full_eta_result[temp_fmin:end]
+            max_eta = max(np.abs(eta))
+            print("\nn:",max_eta)
+            k=calculate_k(max_eta,error_rate)
+            print("k:",k)
+            temp_fmin = end
+        print("\n----------\n")
+
 
 
 if __name__ == "__main__":
     #insprial_data =inspiral_point()
     datafile="waveform_data.pkl"
     #divirative_section(datafile,[43.728557756818006,243.75275131383347],0.99999)
-    waveform_derivative_cal(datafile,5,0.9999)
+    cal_eta_k_fixed_bound(datafile,5,0.9999)
+    #waveform_derivative_cal(datafile,5,0.9999)
     #numerical_512(3,0.9999,512,datafile)
