@@ -2,7 +2,7 @@ import qiskit as qt
 from qiskit.circuit.library.standard_gates import RYGate
 import matplotlib.pyplot as plt
 import numpy as np
-
+import circ_const as CC
 
 #This is Roselyns code
 def GenBinaryStrings(length):
@@ -109,72 +109,38 @@ def amplitudes_for_theta(f):
         normalised.append(norm)
     return normalised
 
-def theta(frequency,m):
+def theta(frequency,m,circ_type):
     """
     Generates thetas for a list of frequencies
     :param frequency:
     :param m: A list of all the frequencies you will be calculating theta for
     :return: the number of qubits in the circ
     This is specifically for f^-7/6 (so p(i)is f^-7/3)
-    TODO Generalise the function for any function
     """
-    j=0
-
     #Gets a list of normalised amplitudes for all the frequencies
+    '''Starting points frequency: 40,78.75,117,156.25,195,272.5
+    These indexs are hard coded for when n=9 would need to be changed for different points
+    Also these directly correspond with the set up of the circuit
+    so would also need to be changed if the circuit changes
+    TODO Generalise this so we send through index'''
     amps= amplitudes_for_theta(frequency)
-    thetas=[]
-    gsp_theta=[]
-    for i in range(m):
-        j=pow(2,i)
-        #For GSP we calculate all possible theta values
-        if i<3:
-            for x in range(j):
-                start=int(x*pow(2,m-i))
-                mid = int((x+0.5)*pow(2,m-i))
-                end = int((x+1)*pow(2,m-i))
-                upper = sum(amps[start:(mid)])
-                lesser =sum(amps[start:(end)])
-                costheta2 = upper/lesser
-                costheta = np.sqrt(costheta2)
-                theta = np.arccos(costheta) 
-                gsp_theta.append(theta*2)
-        #For our reduced circuit we only calculate theta values at specific starting points (indexs)
-        elif i>=3:
-            #Our intermediate level
-            if i==3:
-                thetas.append(gsp_theta)
-                '''Starting points frequency: 40,78.75,117,156.25,195,272.5
-                These indexs are hard coded for when n=9 would need to be changed for different points
-                Also these directly correspond with the set up of the circuit 
-                so would also need to be changed if the circuit changes
-                TODO Generalise this so we send through index'''
-                index=[0,64,128,192,256,384]
-                #index=[0,4,8,12,16,24]
-            #Final circuit structure
-            else:
-                '''Set starting points for all the
-                40, 59.375, 78.75, 117.5, 195, 272.5
-                0,32,64,128,256,384'''
-                #TODO Gereralise this function
-                index=[0,32,64,128,192,256,384]
-                #index=[0,2,4,8,16,24]
-            temp_theta =[]
-            #Calculates theta for a given index
-            for current_index in index:
-                temp_start=current_index
-                place = current_index/pow(2,m-i)
-                increment = int(pow(2,m)/pow(2,i))
-                mid =int((place+0.5)*pow(2,m-i))
-                end=int((place+1)*pow(2,m-i))
-                upper = sum(amps[current_index:mid])
-                lesser =sum(amps[current_index:end])
-                costheta2 = upper/lesser
-                costheta = np.sqrt(costheta2)
-                theta = np.arccos(costheta)
-                temp_theta.append(theta*2)
-            thetas.append(temp_theta)
-    if i<3:
-        thetas.append(gsp_theta)
+    if circ_type == "v0":
+        thetas= [CC.gsp_thetas(amps, 3, 9)]
+        index=[0,64,128,192,256,384]
+        thetas.append(CC.indexed_theta(amps,3,9,index))
+        index=[0,32,64,128,192,256,384]
+        for i in range(5):
+            thetas.append(CC.indexed_theta(amps,4+i,9,index))
+    elif circ_type =="v1":
+        thetas= [CC.gsp_thetas(amps, 3, 9)]
+        index=[0,64,128,192,256,320,384]
+        thetas.append(CC.indexed_theta(amps,3,9,index))
+        index=[0,32,64,96,128,162,192,256,320,384]
+        thetas.append(CC.indexed_theta(amps,4,9,index))
+        index=[0,16,32,48,64,96,128,162,192,256,320,384]
+        for i in range(4):
+            thetas.append(CC.indexed_theta(amps,5+i,9,index))
+
     return thetas
 
 def amplitudes_7_over_6(f):
@@ -208,7 +174,7 @@ def Fidelity(expected_amps,measured_amps):
     fidelity = current*current
     return fidelity
 
-def Inspiral_Fixed_Rots(n,PLOT=True):
+def Inspiral_Fixed_Rots(n,gsp,circ_type,PLOT=True):
     """
     Create a quantum circuit for the inspiral f^-7/6
     :param n: number of qubits
@@ -227,23 +193,36 @@ def Inspiral_Fixed_Rots(n,PLOT=True):
     frequency = np.linspace(40,350,num=pow(2,n),endpoint=False)
     #Generates a two-dimensional array, 0 position will contain all the thetas for GSP
     #The following positions will containing the theatas for each level up to n-1
-    thetas = theta(frequency,n)
+    thetas = theta(frequency,n,circ_type)
 
     #Does the basic GSP algorithm for the first 3 levels
     #m=0 ->m=2
     basic = General_State_Prep(thetas[0])
-    circ.append(basic,qr[n-3:n])
-    #This is for m=3
-    #Currently we have a fixed circuit, the controls are defined here:
-    controls =["000","001","010","011","10","11"]
-    m_3=ThetaRotation(circ,qr,controls,5,thetas[1],True)
-    circ.append(m_3,[*qr])
-    #for the rest of the levels m>3
-    for i in range((n-4)):
-        controls =["0000","0001","001","010","011","10","11"]
-        fixed=ThetaRotation(circ,qr,controls,8-(4+i),thetas[i+2],True)
+    circ.append(basic,qr[n-gsp:n])
+    if circ_type == 'v0':
+        #Currently we have a fixed circuit, the controls are defined here:
+        controls =["000","001","010","011","10","11"]
+        m_3=ThetaRotation(circ,qr,controls,5,thetas[1],True)
+        circ.append(m_3,[*qr])
+        #for the rest of the levels m>3
+        for i in range((n-4)):
+            controls =["0000","0001","001","010","011","10","11"]
+            fixed=ThetaRotation(circ,qr,controls,8-(4+i),thetas[i+2],True)
+            circ.append(fixed,[*qr])
+    elif circ_type == 'v1':
+        print("theat_len:",len(thetas))
+        controls =["000","001","010","011","100","101","11"]
+        m_3=ThetaRotation(circ,qr,controls,5,thetas[1],True)
+        circ.append(m_3,[*qr])
+        #for the rest of the levels m>3
+        controls =["0000","0001","0010","0011","0100","0101","011","100","101","11"]
+        fixed=ThetaRotation(circ,qr,controls,4,thetas[2],True)
         circ.append(fixed,[*qr])
-    #circ.decompose().draw("mpl",fold=-1)
+        for i in range((n-5)):
+            controls =["00000","00001","00010","00011","0010","0011","0100","0101","011","100","101","11"]
+            fixed=ThetaRotation(circ,qr,controls,8-(5+i),thetas[i+3],True)
+            circ.append(fixed,[*qr])
+
 
     #Get the statevector at the current point in the circuit
     circ.save_statevector()
@@ -255,8 +234,6 @@ def Inspiral_Fixed_Rots(n,PLOT=True):
     job = backend.run(tqc,shots=shots)
     result = job.result()
     state_vector = result.get_statevector(tqc)
-    #print("statevector:",state_vector)
-    #plt.show()
 
     #Generates the expected amplitudes
     amps = amplitudes_for_theta(frequency)
@@ -295,49 +272,6 @@ def Inspiral_Fixed_Rots(n,PLOT=True):
 
     print("Fidelity: ",Fidelity(amps_7_6,np.sqrt(state_vector.probabilities())))
 
-def theata_Fixed(frequency,m):
-    """
-    Generates the corresponding theta values for the fixed circuit
-    :param frequency:
-    :param m: the levels we are going to
-    :return: list of all the theta values for the circuit
-    """
-    #TODO Combine with Theta function
-    j=0
-    amps= amplitudes_for_theta(frequency)
-    thetas=[]
-    gsp_theta=[]
-    for i in range(m):
-        j=pow(2,i)
-        #Calculates the Thetas for GSP
-        if i<6:
-            for x in range(j):
-                start=int(x*pow(2,m-i))
-                mid = int((x+0.5)*pow(2,m-i))
-                end = int((x+1)*pow(2,m-i))
-                upper = sum(amps[start:(mid)])
-                lesser =sum(amps[start:(end)])
-                costheta2 = upper/lesser
-                costheta = np.sqrt(costheta2)
-                theta = np.arccos(costheta) 
-                gsp_theta.append(theta*2)
-        else:
-            #Calculates a single theta for all remaining levels
-            if i ==6:
-                thetas.append(gsp_theta)
-            current_index=0
-            place = current_index/pow(2,m-i)
-            increment = int(pow(2,m)/pow(2,i))
-            mid =int((place+0.5)*pow(2,m-i))
-            end=int((place+1)*pow(2,m-i))
-            upper = sum(amps[current_index:mid])
-            lesser =sum(amps[current_index:end])
-            costheta2 = upper/lesser
-            costheta = np.sqrt(costheta2)
-            theta = np.arccos(costheta) 
-            thetas.append(theta*2)
-    return thetas
-
 def plot_bounds(x_data,y_data,n):
     """
     Displays G-R Plots for our distribution
@@ -371,7 +305,8 @@ def plot_bounds(x_data,y_data,n):
 
 if __name__ == "__main__":
     #Correct one
-    Inspiral_Fixed_Rots(9)
+    Inspiral_Fixed_Rots(9,3,"v0")
+    Inspiral_Fixed_Rots(9,3,"v1")
     #Generate thetas
     
 
